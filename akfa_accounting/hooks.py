@@ -48,6 +48,16 @@ app_license = "mit"
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
 doctype_js = {"Payment Entry": "public/js/payment_entry.js"}
+
+# Fixtures
+# --------
+fixtures = [
+	{
+		"dt": "Custom Field",
+		"filters": [["dt", "=", "Payment Entry"], ["fieldname", "=", "custom_is_distributed"]]
+	}
+]
+
 # Svg Icons
 # ------------------
 # include app icons in desk

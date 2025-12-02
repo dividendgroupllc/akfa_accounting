@@ -1,0 +1,12 @@
+[
+ {
+  "doctype": "Custom Field",
+  "dt": "Payment Entry",
+  "fieldname": "custom_is_distributed",
+  "fieldtype": "Check",
+  "insert_after": "custom_tranzaksiya_turi",
+  "label": "Is Distributed",
+  "read_only": 1,
+  "description": "Checked when this Payment Entry has been distributed via Cash Distribution Entry"
+ }
+]

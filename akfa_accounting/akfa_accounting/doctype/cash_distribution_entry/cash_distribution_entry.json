@@ -1,0 +1,203 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "naming_series:",
+ "creation": "2025-12-02 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "posting_date",
+  "column_break_1",
+  "company",
+  "section_break_items",
+  "items",
+  "section_break_distribution",
+  "distribution_details",
+  "section_break_totals",
+  "total_received_usd",
+  "total_distributed_usd",
+  "difference_usd",
+  "column_break_3",
+  "total_received_uzs",
+  "total_distributed_uzs",
+  "difference_uzs",
+  "section_break_refs",
+  "journal_entry",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "ACC-CDE-.YYYY.-",
+   "reqd": 1
+  },
+  {
+   "default": "Today",
+   "fieldname": "posting_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Posting Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_items",
+   "fieldtype": "Section Break",
+   "label": "Payment Entries by Tranzaksiya Turi"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Payment Entries",
+   "options": "Cash Distribution Item",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_distribution",
+   "fieldtype": "Section Break",
+   "label": "Distribution to Suppliers"
+  },
+  {
+   "fieldname": "distribution_details",
+   "fieldtype": "Table",
+   "label": "Distribution Details",
+   "options": "Cash Distribution Detail",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_totals",
+   "fieldtype": "Section Break",
+   "label": "Totals"
+  },
+  {
+   "fieldname": "total_received_usd",
+   "fieldtype": "Currency",
+   "label": "Total Received (USD)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_distributed_usd",
+   "fieldtype": "Currency",
+   "label": "Total Distributed (USD)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "difference_usd",
+   "fieldtype": "Currency",
+   "label": "Difference (USD)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_received_uzs",
+   "fieldtype": "Currency",
+   "label": "Total Received (UZS)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_distributed_uzs",
+   "fieldtype": "Currency",
+   "label": "Total Distributed (UZS)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "difference_uzs",
+   "fieldtype": "Currency",
+   "label": "Difference (UZS)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_refs",
+   "fieldtype": "Section Break",
+   "label": "References",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "journal_entry",
+   "fieldtype": "Link",
+   "label": "Journal Entry",
+   "options": "Journal Entry",
+   "read_only": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Cash Distribution Entry",
+   "print_hide": 1,
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2025-12-02 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "akfa_accounting",
+ "name": "Cash Distribution Entry",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts User",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

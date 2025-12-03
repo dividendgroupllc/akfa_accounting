@@ -81,7 +81,14 @@ class CashDistributionEntry(Document):
 		self.unmark_payment_entries()
 
 	def create_journal_entries(self):
-		"""Create separate Journal Entries for USD and UZS distributions"""
+		"""Create separate Journal Entries for USD and UZS distributions
+		
+		Journal Entry Structure:
+		1. 2110 (Creditors) Credit - Investor (Ofis GL) gives money
+		2. 1114 (Aripov Kassa) Debit - Money enters Aripov cashbox
+		3. 2110 (Creditors) Debit - Each supplier gets debt (multiple rows)
+		4. 1114 (Aripov Kassa) Credit - Money leaves Aripov cashbox
+		"""
 		journal_entries = []
 		
 		for currency in ["USD", "UZS"]:
@@ -90,11 +97,16 @@ class CashDistributionEntry(Document):
 			if not currency_items:
 				continue
 			
-			# Get source account (1110 for USD, 1111 for UZS)
-			source_account_number = "1110" if currency == "USD" else "1111"
-			source_account = frappe.db.get_value(
+			# Get investor for this currency
+			investor = self.investor_usd if currency == "USD" else self.investor_uzs
+			if not investor:
+				frappe.throw(_("Please select Investor (Ofis GL) for {0}").format(currency))
+			
+			# Get Aripov kassa account (1114 for USD, 1115 for UZS)
+			aripov_account_number = "1114" if currency == "USD" else "1115"
+			aripov_account = frappe.db.get_value(
 				"Account",
-				{"account_number": source_account_number, "company": self.company},
+				{"account_number": aripov_account_number, "company": self.company},
 				"name"
 			)
 			
@@ -106,15 +118,11 @@ class CashDistributionEntry(Document):
 				"name"
 			)
 			
-			if not source_account or not creditors_account:
-				continue
+			if not aripov_account:
+				frappe.throw(_("Aripov Kassa Account ({0}) not found for {1}").format(aripov_account_number, currency))
+			if not creditors_account:
+				frappe.throw(_("Creditors Account ({0}) not found for {1}").format(creditors_account_number, currency))
 			
-			je = frappe.new_doc("Journal Entry")
-			je.voucher_type = "Journal Entry"
-			je.posting_date = self.posting_date
-			je.company = self.company
-			je.user_remark = _("Cash Distribution Entry: {0} ({1})").format(self.name, currency)
-
 			# Group by supplier and sum amounts
 			supplier_totals = {}
 			total_amount = 0
@@ -123,8 +131,31 @@ class CashDistributionEntry(Document):
 					supplier_totals[item.supplier] = 0
 				supplier_totals[item.supplier] += flt(item.amount)
 				total_amount += flt(item.amount)
+			
+			je = frappe.new_doc("Journal Entry")
+			je.voucher_type = "Journal Entry"
+			je.posting_date = self.posting_date
+			je.company = self.company
+			je.multi_currency = 1
+			je.user_remark = _("Cash Distribution Entry: {0} ({1})").format(self.name, currency)
 
-			# Debit entries - Creditors Account for each supplier
+			# Row 1: Investor (Ofis GL) gives money - 2110 Credit
+			je.append("accounts", {
+				"account": creditors_account,
+				"party_type": "Supplier",
+				"party": investor,
+				"debit_in_account_currency": 0,
+				"credit_in_account_currency": total_amount,
+			})
+			
+			# Row 2: Money enters Aripov Kassa - 1114 Debit
+			je.append("accounts", {
+				"account": aripov_account,
+				"debit_in_account_currency": total_amount,
+				"credit_in_account_currency": 0,
+			})
+
+			# Row 3+: Each supplier gets debt - 2110 Debit
 			for supplier, amount in supplier_totals.items():
 				je.append("accounts", {
 					"account": creditors_account,
@@ -134,9 +165,9 @@ class CashDistributionEntry(Document):
 					"credit_in_account_currency": 0,
 				})
 
-			# Credit entry - Source Account (Kassa)
+			# Last Row: Money leaves Aripov Kassa - 1114 Credit
 			je.append("accounts", {
-				"account": source_account,
+				"account": aripov_account,
 				"debit_in_account_currency": 0,
 				"credit_in_account_currency": total_amount,
 			})
@@ -167,11 +198,12 @@ class CashDistributionEntry(Document):
 		# Get all tranzaksiya_turi from items
 		for item in self.items:
 			if item.tranzaksiya_turi and item.currency:
-				# Get source account for this currency
-				source_account_number = "1110" if item.currency == "USD" else "1111"
-				source_account = frappe.db.get_value(
+				# Get Davron kassa account for this currency (1110 for USD, 1111 for UZS)
+				# Payment Entries are received into Davron kassa, then distributed from Aripov kassa
+				davron_account_number = "1110" if item.currency == "USD" else "1111"
+				davron_account = frappe.db.get_value(
 					"Account",
-					{"account_number": source_account_number, "company": self.company},
+					{"account_number": davron_account_number, "company": self.company},
 					"name"
 				)
 				
@@ -185,16 +217,16 @@ class CashDistributionEntry(Document):
 						AND company = %s
 						AND docstatus = 1
 						AND IFNULL(custom_tranzaksiya_turi, '') = %s
-				""", (self.posting_date, source_account, self.company, item.tranzaksiya_turi or ""))
+				""", (self.posting_date, davron_account, self.company, item.tranzaksiya_turi or ""))
 
 	def unmark_payment_entries(self):
 		"""Unmark Payment Entries when this document is cancelled"""
 		for item in self.items:
 			if item.tranzaksiya_turi and item.currency:
-				source_account_number = "1110" if item.currency == "USD" else "1111"
-				source_account = frappe.db.get_value(
+				davron_account_number = "1110" if item.currency == "USD" else "1111"
+				davron_account = frappe.db.get_value(
 					"Account",
-					{"account_number": source_account_number, "company": self.company},
+					{"account_number": davron_account_number, "company": self.company},
 					"name"
 				)
 				
@@ -207,40 +239,59 @@ class CashDistributionEntry(Document):
 						AND company = %s
 						AND docstatus = 1
 						AND IFNULL(custom_tranzaksiya_turi, '') = %s
-				""", (self.posting_date, source_account, self.company, item.tranzaksiya_turi or ""))
+				""", (self.posting_date, davron_account, self.company, item.tranzaksiya_turi or ""))
 
 
 @frappe.whitelist()
 def get_payment_entries(posting_date, company):
-	"""Fetch undistributed Payment Entries for the given date, grouped by tranzaksiya_turi and currency"""
+	"""Fetch undistributed Payment Entries for the given date, grouped by tranzaksiya_turi and currency
 	
-	# Get accounts for both currencies
-	usd_account = frappe.db.get_value(
+	Payment Entries go to Davron kassa (1110/1111), but we show Aripov kassa (1114/1115) as source
+	because distribution happens from Aripov kassa
+	"""
+	
+	# Get Davron kassa accounts (where Payment Entries are received)
+	usd_davron_account = frappe.db.get_value(
 		"Account",
 		{"account_number": "1110", "company": company},
 		"name"
 	)
-	uzs_account = frappe.db.get_value(
+	uzs_davron_account = frappe.db.get_value(
 		"Account",
 		{"account_number": "1111", "company": company},
 		"name"
 	)
 	
-	accounts = []
-	if usd_account:
-		accounts.append(usd_account)
-	if uzs_account:
-		accounts.append(uzs_account)
+	# Get Aripov kassa accounts (where distribution happens)
+	usd_aripov_account = frappe.db.get_value(
+		"Account",
+		{"account_number": "1114", "company": company},
+		"name"
+	)
+	uzs_aripov_account = frappe.db.get_value(
+		"Account",
+		{"account_number": "1115", "company": company},
+		"name"
+	)
 	
-	if not accounts:
-		frappe.throw(_("No cash accounts (1110, 1111) found in Company {0}").format(company))
+	davron_accounts = []
+	if usd_davron_account:
+		davron_accounts.append(usd_davron_account)
+	if uzs_davron_account:
+		davron_accounts.append(uzs_davron_account)
+	
+	if not davron_accounts:
+		frappe.throw(_("No Davron kassa accounts (1110, 1111) found in Company {0}").format(company))
 
 	# Fetch Payment Entries grouped by tranzaksiya_turi and currency
 	payment_entries = frappe.db.sql("""
 		SELECT 
 			IFNULL(pe.custom_tranzaksiya_turi, 'No Type') as tranzaksiya_turi,
 			pe.paid_to_account_currency as currency,
-			pe.paid_to as source_account,
+			CASE 
+				WHEN pe.paid_to_account_currency = 'USD' THEN %s
+				ELSE %s
+			END as source_account,
 			SUM(pe.paid_amount) as total_amount,
 			COUNT(*) as pe_count
 		FROM `tabPayment Entry` pe
@@ -250,9 +301,9 @@ def get_payment_entries(posting_date, company):
 			AND pe.company = %s
 			AND pe.docstatus = 1
 			AND IFNULL(pe.custom_is_distributed, 0) = 0
-		GROUP BY pe.custom_tranzaksiya_turi, pe.paid_to_account_currency, pe.paid_to
+		GROUP BY pe.custom_tranzaksiya_turi, pe.paid_to_account_currency
 		ORDER BY pe.paid_to_account_currency, pe.custom_tranzaksiya_turi
-	""", (posting_date, accounts, company), as_dict=True)
+	""", (usd_aripov_account, uzs_aripov_account, posting_date, davron_accounts, company), as_dict=True)
 
 	return {
 		"payment_entries": payment_entries

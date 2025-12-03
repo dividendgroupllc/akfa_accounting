@@ -97,10 +97,8 @@ class CashDistributionEntry(Document):
 			if not currency_items:
 				continue
 			
-			# Get investor for this currency
-			investor = self.investor_usd if currency == "USD" else self.investor_uzs
-			if not investor:
-				frappe.throw(_("Please select Investor (Ofis GL) for {0}").format(currency))
+			# Hardcoded investor (Ofis GL) for each currency
+			investor = "Ofis GL USD" if currency == "USD" else "Ofis GL UZS"
 			
 			# Get Aripov kassa account (1114 for USD, 1115 for UZS)
 			aripov_account_number = "1114" if currency == "USD" else "1115"

@@ -132,9 +132,8 @@
   },
   {
    "fieldname": "journal_entry",
-   "fieldtype": "Link",
-   "label": "Journal Entry",
-   "options": "Journal Entry",
+   "fieldtype": "Small Text",
+   "label": "Journal Entries",
    "read_only": 1
   },
   {

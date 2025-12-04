@@ -116,28 +116,52 @@ frappe.ui.form.on("Cash Distribution Entry", {
 });
 
 frappe.ui.form.on("Cash Distribution Detail", {
-	currency(frm, cdt, cdn) {
+	supplier(frm, cdt, cdn) {
 		let row = frappe.get_doc(cdt, cdn);
-		if (row.currency && frm.doc.company) {
-			// Set creditors account based on currency
-			let account_number = row.currency === "USD" ? "2110" : "2111";
+		if (row.supplier && frm.doc.company) {
+			// Fetch party_currency from Party Financial Defaults
 			frappe.call({
 				method: "frappe.client.get_value",
 				args: {
-					doctype: "Account",
+					doctype: "Party Financial Defaults",
 					filters: {
-						account_number: account_number,
+						party_type: "Supplier",
+						party: row.supplier,
 						company: frm.doc.company
 					},
-					fieldname: "name"
+					fieldname: "currency"
 				},
 				callback: function(r) {
-					if (r.message) {
-						frappe.model.set_value(cdt, cdn, "creditors_account", r.message.name);
+					if (r.message && r.message.currency) {
+						frappe.model.set_value(cdt, cdn, "party_currency", r.message.currency);
+						
+						// Set creditors account based on party_currency
+						let account_number = r.message.currency === "USD" ? "2110" : "2111";
+						frappe.call({
+							method: "frappe.client.get_value",
+							args: {
+								doctype: "Account",
+								filters: {
+									account_number: account_number,
+									company: frm.doc.company
+								},
+								fieldname: "name"
+							},
+							callback: function(acc_r) {
+								if (acc_r.message) {
+									frappe.model.set_value(cdt, cdn, "creditors_account", acc_r.message.name);
+								}
+							}
+						});
 					}
 				}
 			});
 		}
+	},
+
+	currency(frm, cdt, cdn) {
+		// Just recalculate totals when currency changes
+		// Account is set based on party_currency, not distribution currency
 		frm.trigger("calculate_totals");
 	},
 

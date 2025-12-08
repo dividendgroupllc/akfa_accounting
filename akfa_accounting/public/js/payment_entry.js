@@ -5,6 +5,9 @@ frappe.ui.form.on('Payment Entry', {
             frm.$recent_payments_container = $('<div class="form-section" style="margin-top: 30px;"></div>');
             frm.$wrapper.find('.form-layout').append(frm.$recent_payments_container);
         }
+        
+        // Set initial field visibility and requirements based on payment_type
+        set_tranzaksiya_turi_visibility(frm);
     },
 
     mode_of_payment: function(frm) {
@@ -13,14 +16,166 @@ frappe.ui.form.on('Payment Entry', {
         } else if (!frm.doc.mode_of_payment && frm.is_new()) {
             clear_recent_payments(frm);
         }
+        
+        // Auto-fill fields based on payment_type and mode_of_payment
+        apply_payment_entry_defaults(frm);
+        
+        // Update field labels with correct currency
+        update_currency_labels(frm);
     },
 
     refresh: function(frm) {
         if (frm.is_new() && frm.doc.mode_of_payment) {
             load_recent_payments(frm);
         }
+        
+        // Set field visibility and requirements
+        set_tranzaksiya_turi_visibility(frm);
+    },
+    
+    payment_type: function(frm) {
+        // Handle field visibility when payment_type changes
+        set_tranzaksiya_turi_visibility(frm);
+        apply_payment_entry_defaults(frm);
+    },
+    
+    posting_date: function(frm) {
+        // Update balances when date changes
+        if (frm.doc.mode_of_payment) {
+            apply_payment_entry_defaults(frm);
+        }
+    },
+    
+    paid_from: function(frm) {
+        // Update balance when paid_from changes
+        update_paid_from_balance(frm);
+    },
+    
+    paid_to: function(frm) {
+        // Update balance when paid_to changes
+        update_paid_to_balance(frm);
     }
 });
+
+function set_tranzaksiya_turi_visibility(frm) {
+    // Tranzaksiya turi mandatory faqat Receive da, qolganida hidden
+    if (frm.doc.payment_type === 'Receive') {
+        frm.set_df_property('custom_tranzaksiya_turi', 'hidden', 0);
+        frm.set_df_property('custom_tranzaksiya_turi', 'reqd', 1);
+    } else {
+        frm.set_df_property('custom_tranzaksiya_turi', 'hidden', 1);
+        frm.set_df_property('custom_tranzaksiya_turi', 'reqd', 0);
+    }
+}
+
+function apply_payment_entry_defaults(frm) {
+    // Call server-side method to get default values
+    if (!frm.doc.payment_type || !frm.doc.mode_of_payment || !frm.doc.company || !frm.doc.posting_date) {
+        return;
+    }
+    
+    frappe.call({
+        method: 'akfa_accounting.akfa_accounting.api.payment_entry_api.get_payment_entry_defaults',
+        args: {
+            payment_type: frm.doc.payment_type,
+            mode_of_payment: frm.doc.mode_of_payment,
+            company: frm.doc.company,
+            posting_date: frm.doc.posting_date
+        },
+        callback: function(r) {
+            if (r.message && Object.keys(r.message).length > 0) {
+                const defaults = r.message;
+                
+                // Set accounts and party first
+                if (defaults.paid_from) {
+                    frm.set_value('paid_from', defaults.paid_from);
+                }
+                if (defaults.paid_to) {
+                    frm.set_value('paid_to', defaults.paid_to);
+                }
+                if (defaults.party_type) {
+                    frm.set_value('party_type', defaults.party_type);
+                }
+                if (defaults.party) {
+                    frm.set_value('party', defaults.party);
+                }
+                
+                // Set balances after a delay to override ERPNext's default behavior
+                setTimeout(function() {
+                    if (defaults.paid_from_account_balance !== undefined) {
+                        frm.set_value('paid_from_account_balance', defaults.paid_from_account_balance);
+                    }
+                    if (defaults.paid_to_account_balance !== undefined) {
+                        frm.set_value('paid_to_account_balance', defaults.paid_to_account_balance);
+                    }
+                }, 500);
+            }
+        }
+    });
+}
+
+function update_paid_from_balance(frm) {
+    if (frm.doc.paid_from && frm.doc.posting_date) {
+        // Use setTimeout to ensure this runs after ERPNext's handlers
+        setTimeout(function() {
+            frappe.call({
+                method: 'erpnext.accounts.utils.get_balance_on',
+                args: {
+                    account: frm.doc.paid_from,
+                    date: frm.doc.posting_date
+                },
+                callback: function(r) {
+                    if (r.message !== undefined) {
+                        frm.set_value('paid_from_account_balance', r.message);
+                    }
+                }
+            });
+        }, 300);
+    }
+}
+
+function update_paid_to_balance(frm) {
+    if (frm.doc.paid_to && frm.doc.posting_date) {
+        // Use setTimeout to ensure this runs after ERPNext's handlers
+        setTimeout(function() {
+            frappe.call({
+                method: 'erpnext.accounts.utils.get_balance_on',
+                args: {
+                    account: frm.doc.paid_to,
+                    date: frm.doc.posting_date
+                },
+                callback: function(r) {
+                    if (r.message !== undefined) {
+                        frm.set_value('paid_to_account_balance', r.message);
+                    }
+                }
+            });
+        }, 300);
+    }
+}
+
+function update_currency_labels(frm) {
+    // Update field labels based on currency from mode of payment
+    if (!frm.doc.mode_of_payment) {
+        return;
+    }
+    
+    let currency = 'USD';
+    let currency_symbol = '$';
+    
+    if (frm.doc.mode_of_payment.includes('UZS')) {
+        currency = 'UZS';
+        currency_symbol = 'so\'m';
+    }
+    
+    // Update field labels
+    frm.set_df_property('paid_amount', 'label', `Paid Amount (${currency})`);
+    frm.set_df_property('received_amount', 'label', `Received Amount (${currency})`);
+    
+    // Refresh fields to show new labels
+    frm.refresh_field('paid_amount');
+    frm.refresh_field('received_amount');
+}
 
 function clear_recent_payments(frm) {
     if (frm.$recent_payments_container) {

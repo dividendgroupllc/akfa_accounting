@@ -1,0 +1,118 @@
+[
+ {
+  "accounts": [],
+  "docstatus": 0,
+  "doctype": "Mode of Payment",
+  "enabled": 0,
+  "mode_of_payment": "Cheque",
+  "modified": "2025-11-26 19:36:38.689550",
+  "name": "Cheque",
+  "type": "Bank"
+ },
+ {
+  "accounts": [],
+  "docstatus": 0,
+  "doctype": "Mode of Payment",
+  "enabled": 0,
+  "mode_of_payment": "Credit Card",
+  "modified": "2025-11-26 19:36:44.093923",
+  "name": "Credit Card",
+  "type": "Bank"
+ },
+ {
+  "accounts": [],
+  "docstatus": 0,
+  "doctype": "Mode of Payment",
+  "enabled": 0,
+  "mode_of_payment": "Wire Transfer",
+  "modified": "2025-11-26 19:36:49.470660",
+  "name": "Wire Transfer",
+  "type": "Bank"
+ },
+ {
+  "accounts": [],
+  "docstatus": 0,
+  "doctype": "Mode of Payment",
+  "enabled": 0,
+  "mode_of_payment": "Bank Draft",
+  "modified": "2025-11-26 19:36:54.198384",
+  "name": "Bank Draft",
+  "type": "Bank"
+ },
+ {
+  "accounts": [],
+  "docstatus": 0,
+  "doctype": "Mode of Payment",
+  "enabled": 1,
+  "mode_of_payment": "Перемещения на USD",
+  "modified": "2025-11-27 16:44:57.923029",
+  "name": "Перемещения на USD",
+  "type": "Cash"
+ },
+ {
+  "accounts": [],
+  "docstatus": 0,
+  "doctype": "Mode of Payment",
+  "enabled": 1,
+  "mode_of_payment": "Перемещения на UZS",
+  "modified": "2025-11-27 16:46:07.119641",
+  "name": "Перемещения на UZS",
+  "type": "Cash"
+ },
+ {
+  "accounts": [],
+  "docstatus": 0,
+  "doctype": "Mode of Payment",
+  "enabled": 1,
+  "mode_of_payment": "Обмен USD to UZS",
+  "modified": "2025-12-08 15:50:59.897415",
+  "name": "Обмен USD to UZS",
+  "type": "Cash"
+ },
+ {
+  "accounts": [],
+  "docstatus": 0,
+  "doctype": "Mode of Payment",
+  "enabled": 1,
+  "mode_of_payment": "Обмен UZS to USD",
+  "modified": "2025-12-08 15:51:43.016845",
+  "name": "Обмен UZS to USD",
+  "type": "Cash"
+ },
+ {
+  "accounts": [
+   {
+    "company": "Akfa",
+    "default_account": "1111 - Наличные UZS Azimov - A",
+    "parent": "Наличные UZS",
+    "parentfield": "accounts",
+    "parenttype": "Mode of Payment"
+   }
+  ],
+  "docstatus": 0,
+  "doctype": "Mode of Payment",
+  "enabled": 1,
+  "mode_of_payment": "Наличные UZS",
+  "modified": "2025-11-26 19:37:55.125043",
+  "name": "Наличные UZS",
+  "type": "Cash"
+ },
+ {
+  "accounts": [
+   {
+    "company": "Akfa",
+    "default_account": "1110 - Наличные USD Azimov - A",
+    "parent": "Наличные USD",
+    "parentfield": "accounts",
+    "parenttype": "Mode of Payment"
+   }
+  ],
+  "docstatus": 0,
+  "doctype": "Mode of Payment",
+  "enabled": 1,
+  "mode_of_payment": "Наличные USD",
+  "modified": "2025-11-26 19:18:40.911066",
+  "name": "Наличные USD",
+  "type": "Cash"
+ }
+]

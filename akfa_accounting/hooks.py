@@ -54,7 +54,10 @@ doctype_js = {"Payment Entry": "public/js/payment_entry.js"}
 fixtures = [
 	{
 		"dt": "Custom Field",
-		"filters": [["dt", "=", "Payment Entry"], ["fieldname", "=", "custom_is_distributed"]]
+		"filters": [["dt", "=", "Payment Entry"]]
+	},
+	{
+		"dt": "Mode of Payment"
 	}
 ]
 

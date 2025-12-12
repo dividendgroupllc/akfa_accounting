@@ -10,9 +10,10 @@
  "fields": [
   {
    "fieldname": "category_name",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Тип 1",
+   "options": "Account",
    "reqd": 1
   }
  ],

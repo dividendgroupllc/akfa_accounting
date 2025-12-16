@@ -5,7 +5,8 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "category_name"
+  "category_name",
+  "talli_type"
  ],
  "fields": [
   {
@@ -15,6 +16,12 @@
    "label": "Тип 1",
    "options": "Account",
    "reqd": 1
+  },
+  {
+   "fieldname": "talli_type",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Talli Type"
   }
  ],
  "index_web_pages_for_search": 1,

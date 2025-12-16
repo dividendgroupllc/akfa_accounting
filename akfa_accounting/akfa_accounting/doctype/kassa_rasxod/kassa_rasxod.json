@@ -8,21 +8,11 @@
  "field_order": [
   "naming_series",
   "posting_date",
-  "comment",
-  "podrazdelenie",
-  "employee",
-  "employee_name",
-  "column_break_1",
   "mode_of_payment",
-  "payment_account",
-  "account_balance",
-  "section_break_2",
-  "cost_center",
-  "category",
-  "column_break_3",
-  "paid_amount_uzs",
   "currency_exchange_rate",
-  "paid_amount_usd",
+  "section_break_1",
+  "items_data",
+  "custom_items_html",
   "amended_from"
  ],
  "fields": [
@@ -43,31 +33,6 @@
    "reqd": 1
   },
   {
-   "fieldname": "podrazdelenie",
-   "fieldtype": "Link",
-   "label": "Подразделение",
-   "options": "Podrazdelenie",
-   "reqd": 1
-  },
-  {
-   "fieldname": "employee",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Сотрудник",
-   "options": "Employee",
-   "read_only": 1
-  },
-  {
-   "fieldname": "employee_name",
-   "fieldtype": "Data",
-   "label": "ФИО",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_1",
-   "fieldtype": "Column Break"
-  },
-  {
    "fieldname": "mode_of_payment",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -76,64 +41,28 @@
    "reqd": 1
   },
   {
-   "fieldname": "payment_account",
-   "fieldtype": "Link",
-   "label": "Счёт",
-   "options": "Account",
-   "read_only": 1
-  },
-  {
-   "fieldname": "account_balance",
-   "fieldtype": "Currency",
-   "label": "Баланс счёта",
-   "options": "USD",
-   "read_only": 1
-  },
-  {
-   "fieldname": "section_break_2",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "cost_center",
-   "fieldtype": "Link",
-   "label": "Cost Center",
-   "options": "Cost Center",
-   "reqd": 1
-  },
-  {
-   "depends_on": "eval:doc.cost_center",
-   "fieldname": "category",
-   "fieldtype": "Select",
-   "label": "Tip 1",
-   "reqd": 1
-  },
-  {
-   "fieldname": "column_break_3",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "paid_amount_uzs",
-   "fieldtype": "Currency",
-   "label": "Расход UZS",
-   "options": "UZS"
-  },
-  {
    "fieldname": "currency_exchange_rate",
    "fieldtype": "Float",
    "label": "Курс",
    "precision": "2",
+   "read_only": 1,
    "reqd": 1
   },
   {
-   "fieldname": "paid_amount_usd",
-   "fieldtype": "Currency",
-   "label": "Расход USD",
-   "options": "USD"
+   "fieldname": "section_break_1",
+   "fieldtype": "Section Break"
   },
   {
-   "fieldname": "comment",
-   "fieldtype": "Small Text",
-   "label": "Примечание"
+   "fieldname": "items_data",
+   "fieldtype": "Long Text",
+   "hidden": 1,
+   "label": "Items Data"
+  },
+  {
+   "fieldname": "custom_items_html",
+   "fieldtype": "HTML",
+   "label": "Items",
+   "options": "<div id='custom-items-table'></div>"
   },
   {
    "fieldname": "amended_from",

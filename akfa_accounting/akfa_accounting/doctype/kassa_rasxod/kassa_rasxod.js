@@ -16,6 +16,7 @@ frappe.ui.form.on('Kassa Rasxod', {
 
 	mode_of_payment: function(frm) {
 		get_exchange_rate(frm);
+		get_account_balance(frm);
 		refresh_custom_table(frm);
 	},
 
@@ -25,6 +26,12 @@ frappe.ui.form.on('Kassa Rasxod', {
 });
 
 let items_data = [];
+
+// Tip types
+const TIP_RASXOD = 'Расход';
+const TIP_PODOCHOT_PRIXOD = 'Подотчет приход';
+const TIP_PODOCHOT_RASXOD = 'Подотчет расход';
+const TIP_KOPLASHGA = 'Коплашга';
 
 // Mode of payment helpers
 function is_usd_mode(frm) {
@@ -39,12 +46,7 @@ function is_uzs_transfer_mode(frm) {
 	return frm.doc.mode_of_payment === 'Перечисление UZS';
 }
 
-function is_cash_mode(frm) {
-	return is_usd_mode(frm) || is_uzs_cash_mode(frm);
-}
-
 function load_custom_table(frm) {
-	// Load data from hidden field
 	if (frm.doc.items_data) {
 		try {
 			items_data = JSON.parse(frm.doc.items_data);
@@ -56,23 +58,12 @@ function load_custom_table(frm) {
 	}
 
 	render_custom_table(frm);
+	calculate_totals(frm);
 }
 
 function save_items_data(frm) {
 	frm.set_value('items_data', JSON.stringify(items_data));
-}
-
-function get_visible_columns(frm) {
-	// Base columns always visible
-	let columns = [
-		{ key: 'idx', label: '#', width: '40px' },
-		{ key: 'izoh', label: 'Изох', width: '150px' },
-		{ key: 'podrazdilenie', label: 'Подразделение', width: '120px' },
-		{ key: 'rasxod_podochot', label: 'Тип', width: '100px' }
-	];
-
-	// Conditional columns will be added per row
-	return columns;
+	calculate_totals(frm);
 }
 
 function render_custom_table(frm) {
@@ -81,7 +72,6 @@ function render_custom_table(frm) {
 
 	let mode_selected = frm.doc.mode_of_payment ? true : false;
 	let usd_mode = is_usd_mode(frm);
-	let uzs_mode = is_uzs_cash_mode(frm);
 
 	let html = `
 		<style>
@@ -185,21 +175,12 @@ function render_custom_table(frm) {
 		<div class="custom-table-container">
 			<table class="custom-items-table">
 				<thead>
-					<tr>
+					<tr id="table-header">
 						<th style="width: 40px;">#</th>
 						<th style="width: 150px;">Изох</th>
 						<th style="width: 140px;">Подразделение</th>
-						<th style="width: 110px;">Тип</th>
-						<th class="th-cost-center" style="width: 150px;">Cost Center</th>
-						<th class="th-category" style="width: 130px;">Тип 1</th>
-						<th class="th-sektor" style="width: 140px;">Сектор</th>
-						<th class="th-employee" style="width: 150px;">Сотрудник</th>
-						<th class="th-uzs" style="width: 120px;">Сумма UZS</th>
-						<th class="th-usd" style="width: 120px;">Сумма USD</th>
-						<th class="th-party-type" style="width: 120px;">Party Type</th>
-						<th class="th-party" style="width: 140px;">Party</th>
-						<th class="th-date" style="width: 130px;">Дата</th>
-						<th style="width: 40px;"></th>
+						<th style="width: 130px;">Тип</th>
+						<!-- Dynamic columns will be managed per row -->
 					</tr>
 				</thead>
 				<tbody id="custom-table-body">
@@ -233,6 +214,8 @@ function render_custom_table(frm) {
 			paid_amount_usd: 0,
 			party_type: '',
 			party: '',
+			party_type_2: '',
+			party_2: '',
 			date: ''
 		};
 		items_data.push(new_item);
@@ -243,110 +226,159 @@ function render_custom_table(frm) {
 
 function add_table_row(frm, idx, item) {
 	let tbody = frm.fields_dict.custom_items_html.$wrapper.find('#custom-table-body');
-	let $table = frm.fields_dict.custom_items_html.$wrapper.find('.custom-items-table');
 
-	let is_rasxod = item.rasxod_podochot === 'Расход';
-	let is_podochot = item.rasxod_podochot === 'Подотчет';
-	let type_selected = is_rasxod || is_podochot;
+	let tip = item.rasxod_podochot;
+	let is_rasxod = tip === TIP_RASXOD;
+	let is_podochot_prixod = tip === TIP_PODOCHOT_PRIXOD;
+	let is_podochot_rasxod = tip === TIP_PODOCHOT_RASXOD;
+	let is_koplashga = tip === TIP_KOPLASHGA;
+	let is_podochot_type = is_podochot_prixod || is_podochot_rasxod;
 	
 	let mode_selected = frm.doc.mode_of_payment ? true : false;
 	let usd_mode = is_usd_mode(frm);
-	let uzs_mode = is_uzs_cash_mode(frm);
 	let transfer_mode = is_uzs_transfer_mode(frm);
-	
-	// Party required only for Rasxod + Perechislenie UZS
-	let party_required = is_rasxod && transfer_mode;
-	
-	// Date: required for Rasxod
-	let date_required = is_rasxod;
 
-	// Visibility based on type selection
-	let show_cost_center = is_rasxod;
-	let show_category = is_rasxod;
-	let show_sektor = is_podochot;
-	let show_employee = is_podochot;
-	let show_party_type = is_rasxod;
-	let show_party = is_rasxod;
-	let show_date = type_selected;
-	
-	// Summa visibility based on mode of payment
-	let show_uzs = mode_selected && (uzs_mode || transfer_mode);
-	let show_usd = mode_selected; // USD always shown when mode selected
-	let usd_readonly = uzs_mode || transfer_mode;
+	// Build row HTML dynamically based on type
+	let row_html = `<tr data-idx="${idx}">
+		<td class="row-idx">${idx + 1}</td>
+		<td><textarea class="item-izoh">${item.izoh || ''}</textarea></td>
+		<td>
+			<select class="item-podrazdilenie">
+				<option value="">-</option>
+			</select>
+		</td>
+		<td>
+			<select class="item-rasxod-podochot">
+				<option value="">-</option>
+				<option value="${TIP_RASXOD}" ${tip === TIP_RASXOD ? 'selected' : ''}>Расход</option>
+				<option value="${TIP_PODOCHOT_PRIXOD}" ${tip === TIP_PODOCHOT_PRIXOD ? 'selected' : ''}>Подотчет приход</option>
+				<option value="${TIP_PODOCHOT_RASXOD}" ${tip === TIP_PODOCHOT_RASXOD ? 'selected' : ''}>Подотчет расход</option>
+				<option value="${TIP_KOPLASHGA}" ${tip === TIP_KOPLASHGA ? 'selected' : ''}>Коплашга</option>
+			</select>
+		</td>`;
 
-	// Update header visibility
-	$table.find('.th-cost-center').toggle(show_cost_center);
-	$table.find('.th-category').toggle(show_category);
-	$table.find('.th-sektor').toggle(show_sektor);
-	$table.find('.th-employee').toggle(show_employee);
-	$table.find('.th-uzs').toggle(show_uzs);
-	$table.find('.th-usd').toggle(show_usd);
-	$table.find('.th-party-type').toggle(show_party_type);
-	$table.find('.th-party').toggle(show_party);
-	$table.find('.th-date').toggle(show_date);
-
-	let row_html = `
-		<tr data-idx="${idx}">
-			<td class="row-idx">${idx + 1}</td>
-			<td><textarea class="item-izoh">${item.izoh || ''}</textarea></td>
+	// Add columns based on type
+	if (is_rasxod) {
+		// Расход: Cost Center, Tip 1, Summa, Party Type, Party, Date
+		row_html += `
+		<td>
+			<select class="item-cost-center">
+				<option value="">-</option>
+			</select>
+		</td>
+		<td>
+			<select class="item-category">
+				<option value="">-</option>
+			</select>
+		</td>`;
+		
+		// Add Summa field for Rasxod after Tip 1
+		if (usd_mode) {
+			row_html += `
 			<td>
-				<select class="item-podrazdilenie">
-					<option value="">-</option>
-				</select>
-			</td>
+				<input type="number" class="item-paid-amount-usd" value="${item.paid_amount_usd || 0}" step="0.01">
+			</td>`;
+		} else if (mode_selected) {
+			row_html += `
 			<td>
-				<select class="item-rasxod-podochot">
-					<option value="">-</option>
-					<option value="Расход" ${item.rasxod_podochot === 'Расход' ? 'selected' : ''}>Расход</option>
-					<option value="Подотчет" ${item.rasxod_podochot === 'Подотчет' ? 'selected' : ''}>Подотчет</option>
-				</select>
-			</td>
-			<td class="td-cost-center" style="${!show_cost_center ? 'display:none;' : ''}">
-				<select class="item-cost-center">
-					<option value="">-</option>
-				</select>
-			</td>
-			<td class="td-category" style="${!show_category ? 'display:none;' : ''}">
-				<select class="item-category">
-					<option value="">-</option>
-				</select>
-			</td>
-			<td class="td-sektor" style="${!show_sektor ? 'display:none;' : ''}">
-				<select class="item-employee-group">
-					<option value="">-</option>
-				</select>
-			</td>
-			<td class="td-employee" style="${!show_employee ? 'display:none;' : ''}">
-				<select class="item-employee">
-					<option value="">-</option>
-				</select>
-			</td>
-			<td class="td-uzs" style="${!show_uzs ? 'display:none;' : ''}">
-				<input type="number" class="item-paid-amount-uzs" value="${item.paid_amount_uzs || 0}">
-			</td>
-			<td class="td-usd" style="${!show_usd ? 'display:none;' : ''}">
-				<input type="number" class="item-paid-amount-usd" value="${item.paid_amount_usd || 0}" ${usd_readonly ? 'readonly' : ''}>
-			</td>
-			<td class="td-party-type" style="${!show_party_type ? 'display:none;' : ''}">
-				<select class="item-party-type ${party_required ? 'required-field' : ''}">
-					<option value="">-</option>
-					<option value="Employee" ${item.party_type === 'Employee' ? 'selected' : ''}>Employee</option>
-					<option value="Customer" ${item.party_type === 'Customer' ? 'selected' : ''}>Customer</option>
-					<option value="Shareholder" ${item.party_type === 'Shareholder' ? 'selected' : ''}>Shareholder</option>
-					<option value="Supplier" ${item.party_type === 'Supplier' ? 'selected' : ''}>Supplier</option>
-				</select>
-			</td>
-			<td class="td-party" style="${!show_party ? 'display:none;' : ''}">
-				<select class="item-party ${party_required ? 'required-field' : ''}">
-					<option value="">-</option>
-				</select>
-			</td>
-			<td class="td-date" style="${!show_date ? 'display:none;' : ''}">
-				<input type="date" class="item-date ${date_required ? 'required-field' : ''}" value="${item.date || ''}">
-			</td>
-			<td class="delete-cell"><span class="btn-delete-row" title="Delete Row">×</span></td>
-		</tr>
-	`;
+				<input type="number" class="item-paid-amount-uzs" value="${item.paid_amount_uzs || 0}" step="0.01">
+			</td>`;
+		}
+		
+		row_html += `
+		<td>
+			<select class="item-party-type">
+				<option value="">-</option>
+				<option value="Employee" ${item.party_type === 'Employee' ? 'selected' : ''}>Employee</option>
+				<option value="Customer" ${item.party_type === 'Customer' ? 'selected' : ''}>Customer</option>
+				<option value="Shareholder" ${item.party_type === 'Shareholder' ? 'selected' : ''}>Shareholder</option>
+				<option value="Supplier" ${item.party_type === 'Supplier' ? 'selected' : ''}>Supplier</option>
+			</select>
+		</td>
+		<td>
+			<select class="item-party">
+				<option value="">-</option>
+			</select>
+		</td>
+		<td>
+			<input type="date" class="item-date required-field" value="${item.date || ''}" required>
+		</td>`;
+	} else if (is_podochot_type) {
+		// Подотчет приход/расход: Sektor, Sotrudnik, Summa
+		row_html += `
+		<td>
+			<select class="item-employee-group">
+				<option value="">-</option>
+			</select>
+		</td>
+		<td>
+			<select class="item-employee">
+				<option value="">-</option>
+			</select>
+		</td>`;
+		
+		// Add Summa field for Podochot types
+		if (usd_mode) {
+			row_html += `
+			<td>
+				<input type="number" class="item-paid-amount-usd" value="${item.paid_amount_usd || 0}" step="0.01">
+			</td>`;
+		} else if (mode_selected) {
+			row_html += `
+			<td>
+				<input type="number" class="item-paid-amount-uzs" value="${item.paid_amount_uzs || 0}" step="0.01">
+			</td>`;
+		}
+	} else if (is_koplashga) {
+		// Коплашга: Party Type 1, Party 1, Summa, Party Type 2, Party 2
+		row_html += `
+		<td>
+			<select class="item-party-type">
+				<option value="">-</option>
+				<option value="Employee" ${item.party_type === 'Employee' ? 'selected' : ''}>Employee</option>
+				<option value="Customer" ${item.party_type === 'Customer' ? 'selected' : ''}>Customer</option>
+				<option value="Shareholder" ${item.party_type === 'Shareholder' ? 'selected' : ''}>Shareholder</option>
+				<option value="Supplier" ${item.party_type === 'Supplier' ? 'selected' : ''}>Supplier</option>
+			</select>
+		</td>
+		<td>
+			<select class="item-party">
+				<option value="">-</option>
+			</select>
+		</td>`;
+		
+		// Add Summa field for Koplashga
+		if (usd_mode) {
+			row_html += `
+			<td>
+				<input type="number" class="item-paid-amount-usd" value="${item.paid_amount_usd || 0}" step="0.01">
+			</td>`;
+		} else if (mode_selected) {
+			row_html += `
+			<td>
+				<input type="number" class="item-paid-amount-uzs" value="${item.paid_amount_uzs || 0}" step="0.01">
+			</td>`;
+		}
+		
+		// Add Party Type 2 and Party 2 for Koplashga AFTER summa
+		row_html += `
+		<td>
+			<select class="item-party-type-2">
+				<option value="">-</option>
+				<option value="Employee" ${item.party_type_2 === 'Employee' ? 'selected' : ''}>Employee</option>
+				<option value="Customer" ${item.party_type_2 === 'Customer' ? 'selected' : ''}>Customer</option>
+				<option value="Shareholder" ${item.party_type_2 === 'Shareholder' ? 'selected' : ''}>Shareholder</option>
+				<option value="Supplier" ${item.party_type_2 === 'Supplier' ? 'selected' : ''}>Supplier</option>
+			</select>
+		</td>
+		<td>
+			<select class="item-party-2">
+				<option value="">-</option>
+			</select>
+		</td>`;
+	}
+
+	row_html += `<td class="delete-cell"><span class="btn-delete-row" title="Delete Row">×</span></td></tr>`;
 
 	tbody.append(row_html);
 
@@ -354,29 +386,89 @@ function add_table_row(frm, idx, item) {
 
 	// Load Podrazdelenie options
 	load_podrazdelenie_options($row, item.podrazdilenie);
-	
-	// Load Cost Center options if visible
-	if (show_cost_center) {
+
+	// Load options based on type
+	if (is_rasxod) {
 		load_cost_center_options($row, item.cost_center);
 		if (item.cost_center) {
 			load_categories($row, item.cost_center, item.category);
 		}
-	}
-	
-	// Load Employee Group (Sektor) options if visible
-	if (show_sektor) {
+		if (item.party_type) {
+			load_party_options($row, '.item-party', item.party_type, item.party);
+		}
+	} else if (is_podochot_type) {
 		load_employee_group_options($row, item.employee_group);
 		if (item.employee_group) {
 			load_employee_options($row, item.employee_group, item.employee);
 		}
-	}
-	
-	// Load Party options if visible and party_type is selected
-	if (show_party && item.party_type) {
-		load_party_options($row, item.party_type, item.party);
+	} else if (is_koplashga) {
+		if (item.party_type) {
+			load_party_options($row, '.item-party', item.party_type, item.party);
+		}
+		if (item.party_type_2) {
+			load_party_options($row, '.item-party-2', item.party_type_2, item.party_2);
+		}
 	}
 
-	// Field change handlers
+	// Event handlers
+	setup_row_handlers(frm, $row, idx);
+
+	// Update header to match current row structure
+	update_table_header(frm, tip);
+}
+
+function update_table_header(frm, tip) {
+	let $header = frm.fields_dict.custom_items_html.$wrapper.find('#table-header');
+	
+	// Remove old dynamic columns
+	$header.find('.dynamic-col').remove();
+	
+	let mode_selected = frm.doc.mode_of_payment ? true : false;
+	let usd_mode = is_usd_mode(frm);
+	let summa_label = usd_mode ? 'Сумма USD' : 'Сумма UZS';
+
+	let header_html = '';
+	
+	if (tip === TIP_RASXOD) {
+		// Расход: Cost Center, Tip 1, Summa, Party Type, Party, Date
+		header_html = `
+			<th class="dynamic-col" style="width: 150px;">Cost Center</th>
+			<th class="dynamic-col" style="width: 130px;">Тип 1</th>`;
+		if (mode_selected) {
+			header_html += `<th class="dynamic-col" style="width: 120px;">${summa_label}</th>`;
+		}
+		header_html += `
+			<th class="dynamic-col" style="width: 120px;">Party Type</th>
+			<th class="dynamic-col" style="width: 140px;">Party</th>
+			<th class="dynamic-col" style="width: 130px;">Дата *</th>`;
+	} else if (tip === TIP_PODOCHOT_PRIXOD || tip === TIP_PODOCHOT_RASXOD) {
+		// Подотчет: Sektor, Sotrudnik, Summa
+		header_html = `
+			<th class="dynamic-col" style="width: 140px;">Сектор</th>
+			<th class="dynamic-col" style="width: 150px;">Сотрудник</th>`;
+		if (mode_selected) {
+			header_html += `<th class="dynamic-col" style="width: 120px;">${summa_label}</th>`;
+		}
+	} else if (tip === TIP_KOPLASHGA) {
+		// Коплашга: Party Type, Party, Summa, Party Type 2, Party 2
+		header_html = `
+			<th class="dynamic-col" style="width: 120px;">Party Type</th>
+			<th class="dynamic-col" style="width: 140px;">Party</th>`;
+		if (mode_selected) {
+			header_html += `<th class="dynamic-col" style="width: 120px;">${summa_label}</th>`;
+		}
+		header_html += `
+			<th class="dynamic-col" style="width: 120px;">Party Type 2</th>
+			<th class="dynamic-col" style="width: 140px;">Party 2</th>`;
+	}
+
+	// Add delete column
+	header_html += `<th class="dynamic-col" style="width: 40px;"></th>`;
+	
+	$header.append(header_html);
+}
+
+function setup_row_handlers(frm, $row, idx) {
 	$row.find('.item-izoh').on('change', function() {
 		items_data[idx].izoh = $(this).val();
 		save_items_data(frm);
@@ -397,6 +489,8 @@ function add_table_row(frm, idx, item) {
 		items_data[idx].employee = '';
 		items_data[idx].party_type = '';
 		items_data[idx].party = '';
+		items_data[idx].party_type_2 = '';
+		items_data[idx].party_2 = '';
 		items_data[idx].date = '';
 		save_items_data(frm);
 		refresh_custom_table(frm);
@@ -418,7 +512,6 @@ function add_table_row(frm, idx, item) {
 		items_data[idx].category = $(this).val();
 		save_items_data(frm);
 
-		// Get talli_type
 		if (items_data[idx].cost_center && items_data[idx].category) {
 			get_talli_type(items_data[idx].cost_center, items_data[idx].category, idx);
 		}
@@ -430,7 +523,6 @@ function add_table_row(frm, idx, item) {
 		items_data[idx].employee = '';
 		save_items_data(frm);
 		
-		// Load employees for this group
 		if (employee_group) {
 			load_employee_options($row, employee_group, '');
 		} else {
@@ -447,10 +539,9 @@ function add_table_row(frm, idx, item) {
 		let uzs = parseFloat($(this).val()) || 0;
 		items_data[idx].paid_amount_uzs = uzs;
 
-		// UZS mode: convert to USD
-		if (is_uzs_cash_mode(frm) && frm.doc.currency_exchange_rate) {
+		// Calculate USD automatically
+		if (frm.doc.currency_exchange_rate) {
 			items_data[idx].paid_amount_usd = uzs / frm.doc.currency_exchange_rate;
-			$row.find('.item-paid-amount-usd').val(items_data[idx].paid_amount_usd.toFixed(2));
 		}
 		save_items_data(frm);
 	});
@@ -458,7 +549,6 @@ function add_table_row(frm, idx, item) {
 	$row.find('.item-paid-amount-usd').on('change', function() {
 		let usd = parseFloat($(this).val()) || 0;
 		items_data[idx].paid_amount_usd = usd;
-		// USD mode: no conversion needed
 		save_items_data(frm);
 	});
 
@@ -468,9 +558,8 @@ function add_table_row(frm, idx, item) {
 		items_data[idx].party = '';
 		save_items_data(frm);
 		
-		// Load party options
 		if (party_type) {
-			load_party_options($row, party_type, '');
+			load_party_options($row, '.item-party', party_type, '');
 		} else {
 			$row.find('.item-party').empty().append('<option value="">-</option>');
 		}
@@ -478,6 +567,25 @@ function add_table_row(frm, idx, item) {
 
 	$row.find('.item-party').on('change', function() {
 		items_data[idx].party = $(this).val();
+		save_items_data(frm);
+	});
+
+	// Party Type 2 and Party 2 for Koplashga
+	$row.find('.item-party-type-2').on('change', function() {
+		let party_type = $(this).val();
+		items_data[idx].party_type_2 = party_type;
+		items_data[idx].party_2 = '';
+		save_items_data(frm);
+		
+		if (party_type) {
+			load_party_options($row, '.item-party-2', party_type, '');
+		} else {
+			$row.find('.item-party-2').empty().append('<option value="">-</option>');
+		}
+	});
+
+	$row.find('.item-party-2').on('change', function() {
+		items_data[idx].party_2 = $(this).val();
 		save_items_data(frm);
 	});
 
@@ -571,7 +679,6 @@ function load_employee_group_options($row, selected_value) {
 
 // Load Employee options filtered by Employee Group
 function load_employee_options($row, employee_group, selected_value) {
-	// Use whitelisted API to get employees
 	frappe.call({
 		method: 'akfa_accounting.akfa_accounting.doctype.kassa_rasxod.kassa_rasxod.get_employees_by_group',
 		args: {
@@ -593,7 +700,7 @@ function load_employee_options($row, employee_group, selected_value) {
 }
 
 // Load Party options based on Party Type
-function load_party_options($row, party_type, selected_value) {
+function load_party_options($row, selector, party_type, selected_value) {
 	frappe.call({
 		method: 'frappe.client.get_list',
 		args: {
@@ -603,7 +710,7 @@ function load_party_options($row, party_type, selected_value) {
 		},
 		callback: function(r) {
 			if (r.message) {
-				let $select = $row.find('.item-party');
+				let $select = $row.find(selector);
 				$select.empty();
 				$select.append('<option value="">-</option>');
 				r.message.forEach(function(item) {
@@ -657,7 +764,7 @@ function get_talli_type(cost_center, category, idx) {
 
 function recalculate_all_amounts(frm) {
 	// Only recalculate when in UZS mode
-	if (is_uzs_cash_mode(frm) && frm.doc.currency_exchange_rate) {
+	if (!is_usd_mode(frm) && frm.doc.currency_exchange_rate) {
 		items_data.forEach(function(item) {
 			if (item.paid_amount_uzs) {
 				item.paid_amount_usd = item.paid_amount_uzs / frm.doc.currency_exchange_rate;
@@ -698,4 +805,72 @@ function get_exchange_rate(frm) {
 			}
 		}
 	});
+}
+
+function get_account_balance(frm) {
+	if (!frm.doc.mode_of_payment) {
+		frm.set_value('balance', 0);
+		return;
+	}
+
+	frappe.call({
+		method: 'akfa_accounting.akfa_accounting.doctype.kassa_rasxod.kassa_rasxod.get_mode_of_payment_balance',
+		args: {
+			mode_of_payment: frm.doc.mode_of_payment,
+			posting_date: frm.doc.posting_date
+		},
+		callback: function(r) {
+			if (r.message !== undefined) {
+				frm.set_value('balance', r.message);
+				calculate_totals(frm);
+			}
+		}
+	});
+}
+
+function calculate_totals(frm) {
+	let total_amount = 0;
+	let podochot_prixod_sum = 0;
+	let koplashga_plus = 0;
+
+	let usd_mode = is_usd_mode(frm);
+
+	items_data.forEach(function(item) {
+		let summa = usd_mode ? (item.paid_amount_usd || 0) : (item.paid_amount_uzs || 0);
+		
+		if (item.rasxod_podochot === TIP_RASXOD) {
+			// Rasxod: add to total if party_type and party are empty
+			if (!item.party_type || !item.party) {
+				total_amount += summa;
+			}
+		} else if (item.rasxod_podochot === TIP_PODOCHOT_PRIXOD) {
+			// Podochot prixod: add to balance (plus)
+			podochot_prixod_sum += summa;
+		} else if (item.rasxod_podochot === TIP_PODOCHOT_RASXOD) {
+			// Podochot rasxod: add to total amount
+			total_amount += summa;
+		} else if (item.rasxod_podochot === TIP_KOPLASHGA) {
+			// Koplashga logic:
+			let has_party1 = item.party_type && item.party;
+			let has_party2 = item.party_type_2 && item.party_2;
+			
+			if (has_party1 && has_party2) {
+				// Both parties filled - no effect on balance
+			} else if (has_party1 && !has_party2) {
+				// Only first party - add to balance (pul keldi)
+				koplashga_plus += summa;
+			} else if (!has_party1 && has_party2) {
+				// Only second party - add to total amount (pul ketdi)
+				total_amount += summa;
+			}
+		}
+	});
+
+	// Set total_amount field
+	frm.set_value('total_amount', total_amount);
+
+	// Calculate qoldi: balance + podochot_prixod + koplashga_plus - total_amount
+	let balance = frm.doc.balance || 0;
+	let qoldi = balance + podochot_prixod_sum + koplashga_plus - total_amount;
+	frm.set_value('qoldi', qoldi);
 }

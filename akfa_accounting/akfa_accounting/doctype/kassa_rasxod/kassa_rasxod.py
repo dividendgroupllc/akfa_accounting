@@ -71,7 +71,9 @@ class KassaRasxod(Document):
 			return
 
 		for idx, item in enumerate(items, start=1):
-			if item.get('rasxod_podochot') == "Расход":
+			tip = item.get('rasxod_podochot')
+			
+			if tip == "Расход":
 				# Cost Center and Category required
 				if not item.get('cost_center'):
 					frappe.throw(
@@ -84,19 +86,6 @@ class KassaRasxod(Document):
 						title=_("Validation Error")
 					)
 
-				# Party and Party Type - required only with Perechislenie
-				if self.mode_of_payment == "Перечисления UZS":
-					if not item.get('party_type'):
-						frappe.throw(
-							_("Row #{0}: Party Type is required for Расход with Перечисления UZS").format(idx),
-							title=_("Validation Error")
-						)
-					if not item.get('party'):
-						frappe.throw(
-							_("Row #{0}: Party is required for Расход with Перечисления UZS").format(idx),
-							title=_("Validation Error")
-						)
-
 				# Date required for Rasxod
 				if not item.get('date'):
 					frappe.throw(
@@ -104,16 +93,27 @@ class KassaRasxod(Document):
 						title=_("Validation Error")
 					)
 
-			elif item.get('rasxod_podochot') == "Подотчет":
+			elif tip in ["Подотчет приход", "Подотчет расход"]:
 				# Employee Group and Employee required
 				if not item.get('employee_group'):
 					frappe.throw(
-						_("Row #{0}: Employee Group (Сектор) is required for Подотчет").format(idx),
+						_("Row #{0}: Employee Group (Сектор) is required for {1}").format(idx, tip),
 						title=_("Validation Error")
 					)
 				if not item.get('employee'):
 					frappe.throw(
-						_("Row #{0}: Employee is required for Подотчет").format(idx),
+						_("Row #{0}: Employee is required for {1}").format(idx, tip),
+						title=_("Validation Error")
+					)
+
+			elif tip == "Коплашга":
+				# At least one party pair should be filled
+				has_party1 = item.get('party_type') and item.get('party')
+				has_party2 = item.get('party_type_2') and item.get('party_2')
+				
+				if not has_party1 and not has_party2:
+					frappe.throw(
+						_("Row #{0}: At least one Party must be filled for Коплашга").format(idx),
 						title=_("Validation Error")
 					)
 
@@ -131,3 +131,33 @@ def get_employees_by_group(employee_group):
 	""", employee_group, as_dict=True)
 	
 	return employees
+
+
+@frappe.whitelist()
+def get_mode_of_payment_balance(mode_of_payment, posting_date=None):
+	"""Get account balance for Mode of Payment"""
+	if not mode_of_payment:
+		return 0
+	
+	# Get the account linked to Mode of Payment
+	account = frappe.db.get_value(
+		"Mode of Payment Account",
+		{
+			"parent": mode_of_payment,
+			"parenttype": "Mode of Payment"
+		},
+		"default_account"
+	)
+	
+	if not account:
+		return 0
+	
+	# Get account balance using ERPNext utility
+	from erpnext.accounts.utils import get_balance_on
+	
+	balance = get_balance_on(
+		account=account,
+		date=posting_date
+	)
+	
+	return balance or 0

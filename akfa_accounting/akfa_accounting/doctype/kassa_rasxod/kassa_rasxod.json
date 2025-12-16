@@ -10,6 +10,10 @@
   "posting_date",
   "mode_of_payment",
   "currency_exchange_rate",
+  "column_break_balance",
+  "balance",
+  "total_amount",
+  "qoldi",
   "section_break_1",
   "items_data",
   "custom_items_html",
@@ -47,6 +51,28 @@
    "precision": "2",
    "read_only": 1,
    "reqd": 1
+  },
+  {
+   "fieldname": "column_break_balance",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "balance",
+   "fieldtype": "Currency",
+   "label": "Balance",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_amount",
+   "fieldtype": "Currency",
+   "label": "Total Amount",
+   "read_only": 1
+  },
+  {
+   "fieldname": "qoldi",
+   "fieldtype": "Currency",
+   "label": "Қолди",
+   "read_only": 1
   },
   {
    "fieldname": "section_break_1",

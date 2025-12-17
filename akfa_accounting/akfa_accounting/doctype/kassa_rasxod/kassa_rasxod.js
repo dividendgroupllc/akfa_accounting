@@ -286,9 +286,6 @@ function add_table_row(frm, idx, item) {
 			</td>`;
 		}
 		
-		// Default date to posting_date (today)
-		let default_date = item.date || frm.doc.posting_date || frappe.datetime.get_today();
-		
 		row_html += `
 		<td>
 			<select class="item-party-type">
@@ -305,7 +302,7 @@ function add_table_row(frm, idx, item) {
 			</select>
 		</td>
 		<td>
-			<input type="date" class="item-date required-field" value="${default_date}" required>
+			<input type="date" class="item-date required-field" value="${item.date || ''}" required>
 		</td>
 		<td>
 			<button type="button" class="btn btn-xs btn-default item-upload-btn" data-file="${item.upload_file || ''}">

@@ -216,7 +216,8 @@ function render_custom_table(frm) {
 			party: '',
 			party_type_2: '',
 			party_2: '',
-			date: ''
+			date: '',
+			upload_file: ''
 		};
 		items_data.push(new_item);
 		add_table_row(frm, items_data.length - 1, new_item);
@@ -285,6 +286,9 @@ function add_table_row(frm, idx, item) {
 			</td>`;
 		}
 		
+		// Default date to posting_date (today)
+		let default_date = item.date || frm.doc.posting_date || frappe.datetime.get_today();
+		
 		row_html += `
 		<td>
 			<select class="item-party-type">
@@ -301,7 +305,13 @@ function add_table_row(frm, idx, item) {
 			</select>
 		</td>
 		<td>
-			<input type="date" class="item-date required-field" value="${item.date || ''}" required>
+			<input type="date" class="item-date required-field" value="${default_date}" required>
+		</td>
+		<td>
+			<button type="button" class="btn btn-xs btn-default item-upload-btn" data-file="${item.upload_file || ''}">
+				<i class="fa ${item.upload_file ? 'fa-file' : 'fa-upload'}"></i>
+			</button>
+			<input type="file" class="item-upload-file" style="display:none;">
 		</td>`;
 	} else if (is_podochot_type) {
 		// Подотчет приход/расход: Sektor, Sotrudnik, Summa
@@ -329,6 +339,15 @@ function add_table_row(frm, idx, item) {
 				<input type="number" class="item-paid-amount-uzs" value="${item.paid_amount_uzs || 0}" step="0.01">
 			</td>`;
 		}
+		
+		// Upload file for Podochot
+		row_html += `
+		<td>
+			<button type="button" class="btn btn-xs btn-default item-upload-btn" data-file="${item.upload_file || ''}">
+				<i class="fa ${item.upload_file ? 'fa-file' : 'fa-upload'}"></i>
+			</button>
+			<input type="file" class="item-upload-file" style="display:none;">
+		</td>`;
 	} else if (is_koplashga) {
 		// Коплашга: Party Type 1, Party 1, Summa, Party Type 2, Party 2
 		row_html += `
@@ -375,6 +394,12 @@ function add_table_row(frm, idx, item) {
 			<select class="item-party-2">
 				<option value="">-</option>
 			</select>
+		</td>
+		<td>
+			<button type="button" class="btn btn-xs btn-default item-upload-btn" data-file="${item.upload_file || ''}">
+				<i class="fa ${item.upload_file ? 'fa-file' : 'fa-upload'}"></i>
+			</button>
+			<input type="file" class="item-upload-file" style="display:none;">
 		</td>`;
 	}
 
@@ -430,7 +455,7 @@ function update_table_header(frm, tip) {
 	let header_html = '';
 	
 	if (tip === TIP_RASXOD) {
-		// Расход: Cost Center, Tip 1, Summa, Party Type, Party, Date
+		// Расход: Cost Center, Tip 1, Summa, Party Type, Party, Date, File
 		header_html = `
 			<th class="dynamic-col" style="width: 150px;">Cost Center</th>
 			<th class="dynamic-col" style="width: 130px;">Тип 1</th>`;
@@ -440,17 +465,19 @@ function update_table_header(frm, tip) {
 		header_html += `
 			<th class="dynamic-col" style="width: 120px;">Party Type</th>
 			<th class="dynamic-col" style="width: 140px;">Party</th>
-			<th class="dynamic-col" style="width: 130px;">Дата *</th>`;
+			<th class="dynamic-col" style="width: 130px;">Дата *</th>
+			<th class="dynamic-col" style="width: 50px;">File</th>`;
 	} else if (tip === TIP_PODOCHOT_PRIXOD || tip === TIP_PODOCHOT_RASXOD) {
-		// Подотчет: Sektor, Sotrudnik, Summa
+		// Подотчет: Sektor, Sotrudnik, Summa, File
 		header_html = `
 			<th class="dynamic-col" style="width: 140px;">Сектор</th>
 			<th class="dynamic-col" style="width: 150px;">Сотрудник</th>`;
 		if (mode_selected) {
 			header_html += `<th class="dynamic-col" style="width: 120px;">${summa_label}</th>`;
 		}
+		header_html += `<th class="dynamic-col" style="width: 50px;">File</th>`;
 	} else if (tip === TIP_KOPLASHGA) {
-		// Коплашга: Party Type, Party, Summa, Party Type 2, Party 2
+		// Коплашга: Party Type, Party, Summa, Party Type 2, Party 2, File
 		header_html = `
 			<th class="dynamic-col" style="width: 120px;">Party Type</th>
 			<th class="dynamic-col" style="width: 140px;">Party</th>`;
@@ -459,7 +486,8 @@ function update_table_header(frm, tip) {
 		}
 		header_html += `
 			<th class="dynamic-col" style="width: 120px;">Party Type 2</th>
-			<th class="dynamic-col" style="width: 140px;">Party 2</th>`;
+			<th class="dynamic-col" style="width: 140px;">Party 2</th>
+			<th class="dynamic-col" style="width: 50px;">File</th>`;
 	}
 
 	// Add delete column
@@ -599,6 +627,60 @@ function setup_row_handlers(frm, $row, idx) {
 			items_data.splice(idx, 1);
 			save_items_data(frm);
 			refresh_custom_table(frm);
+		}
+	});
+
+	// Upload file handler
+	$row.find('.item-upload-btn').on('click', function() {
+		let $btn = $(this);
+		let existing_file = $btn.data('file');
+		
+		if (existing_file) {
+			// Show options: view or remove
+			frappe.msgprint({
+				title: __('File Attached'),
+				message: `<a href="${existing_file}" target="_blank">${__('View File')}</a><br><br>
+					<button class="btn btn-danger btn-sm remove-file-btn">${__('Remove File')}</button>`,
+				primary_action: {
+					label: __('Close'),
+					action: function() {
+						frappe.msg_dialog.hide();
+					}
+				}
+			});
+			
+			$(document).on('click', '.remove-file-btn', function() {
+				items_data[idx].upload_file = '';
+				$btn.data('file', '');
+				$btn.find('i').removeClass('fa-file').addClass('fa-upload');
+				save_items_data(frm);
+				frappe.msg_dialog.hide();
+			});
+		} else {
+			$row.find('.item-upload-file').click();
+		}
+	});
+
+	$row.find('.item-upload-file').on('change', function(e) {
+		let file = e.target.files[0];
+		if (file) {
+			// Upload file using Frappe
+			let $btn = $row.find('.item-upload-btn');
+			
+			frappe.upload_handler({
+				files: [file],
+				doctype: frm.doctype,
+				docname: frm.docname || 'New ' + frm.doctype,
+				folder: 'Home/Attachments',
+				is_private: 1,
+				callback: function(attachment) {
+					items_data[idx].upload_file = attachment.file_url;
+					$btn.data('file', attachment.file_url);
+					$btn.find('i').removeClass('fa-upload').addClass('fa-file');
+					save_items_data(frm);
+					frappe.show_alert({message: __('File uploaded successfully'), indicator: 'green'});
+				}
+			});
 		}
 	});
 }

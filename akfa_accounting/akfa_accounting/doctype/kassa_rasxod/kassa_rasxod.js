@@ -913,21 +913,30 @@ function calculate_totals(frm) {
 	let koplashga_plus = 0;
 
 	let usd_mode = is_usd_mode(frm);
+	let exchange_rate = frm.doc.currency_exchange_rate || 1;
 
 	items_data.forEach(function(item) {
-		let summa = usd_mode ? (item.paid_amount_usd || 0) : (item.paid_amount_uzs || 0);
+		// Get amount in USD
+		let summa_usd;
+		if (usd_mode) {
+			summa_usd = item.paid_amount_usd || 0;
+		} else {
+			// UZS mode - convert to USD
+			let uzs_amount = item.paid_amount_uzs || 0;
+			summa_usd = uzs_amount / exchange_rate;
+		}
 		
 		if (item.rasxod_podochot === TIP_RASXOD) {
 			// Rasxod: add to total if party_type and party are empty
 			if (!item.party_type || !item.party) {
-				total_amount += summa;
+				total_amount += summa_usd;
 			}
 		} else if (item.rasxod_podochot === TIP_PODOCHOT_PRIXOD) {
 			// Podochot prixod: add to balance (plus)
-			podochot_prixod_sum += summa;
+			podochot_prixod_sum += summa_usd;
 		} else if (item.rasxod_podochot === TIP_PODOCHOT_RASXOD) {
 			// Podochot rasxod: add to total amount
-			total_amount += summa;
+			total_amount += summa_usd;
 		} else if (item.rasxod_podochot === TIP_KOPLASHGA) {
 			// Koplashga logic:
 			let has_party1 = item.party_type && item.party;
@@ -937,15 +946,15 @@ function calculate_totals(frm) {
 				// Both parties filled - no effect on balance
 			} else if (has_party1 && !has_party2) {
 				// Only first party - add to balance (pul keldi)
-				koplashga_plus += summa;
+				koplashga_plus += summa_usd;
 			} else if (!has_party1 && has_party2) {
 				// Only second party - add to total amount (pul ketdi)
-				total_amount += summa;
+				total_amount += summa_usd;
 			}
 		}
 	});
 
-	// Set total_amount field
+	// Set total_amount field (always in USD)
 	frm.set_value('total_amount', total_amount);
 
 	// Calculate qoldi: balance + podochot_prixod + koplashga_plus - total_amount

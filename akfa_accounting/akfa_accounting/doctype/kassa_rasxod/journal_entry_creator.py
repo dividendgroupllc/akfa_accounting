@@ -26,7 +26,7 @@ class JournalEntryCreator:
     # Currency mode constants
     USD_MODE = "Наличный USD H"
     UZS_CASH_MODE = "Наличный UZS H"
-    UZS_TRANSFER_MODE = "Перечисление UZS"
+    UZS_TRANSFER_MODE = "Перечисления UZS"
     
     def __init__(self, kassa_rasxod_doc):
         self.doc = kassa_rasxod_doc
@@ -65,7 +65,16 @@ class JournalEntryCreator:
         
         # Determine if multi-currency mode
         self.is_multi_currency = self.cash_account_currency == "UZS"
-        self.exchange_rate = self.doc.currency_exchange_rate or 1
+        
+        # For UZS accounts, exchange_rate should be UZS to USD (1/12020 = 0.000083)
+        # For USD accounts, exchange_rate = 1
+        usd_to_uzs_rate = self.doc.currency_exchange_rate or 12020
+        if self.is_multi_currency:
+            # UZS mode: exchange_rate = 1 UZS = X USD
+            self.exchange_rate = 1 / usd_to_uzs_rate
+        else:
+            # USD mode: exchange_rate = 1
+            self.exchange_rate = 1
         
         # Get company from account
         self.company = frappe.db.get_value("Account", self.cash_account, "company")

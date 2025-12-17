@@ -72,12 +72,18 @@ class KassaRasxod(Document):
         except (json.JSONDecodeError, TypeError):
             return
         
+        # USD mode - only Наличный USD H
         is_usd_mode = self.mode_of_payment == "Наличный USD H"
         
         for item in items:
-            if not is_usd_mode and item.get('paid_amount_uzs'):
-                # UZS mode - calculate USD from UZS
-                item['paid_amount_usd'] = item['paid_amount_uzs'] / self.currency_exchange_rate
+            if is_usd_mode:
+                # USD mode - paid_amount_usd is entered directly, calculate UZS
+                if item.get('paid_amount_usd'):
+                    item['paid_amount_uzs'] = item['paid_amount_usd'] * self.currency_exchange_rate
+            else:
+                # UZS mode (Наличный UZS H, Перечисления UZS) - paid_amount_uzs is entered, calculate USD
+                if item.get('paid_amount_uzs'):
+                    item['paid_amount_usd'] = item['paid_amount_uzs'] / self.currency_exchange_rate
         
         self.items_data = json.dumps(items)
     

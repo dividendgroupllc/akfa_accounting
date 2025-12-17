@@ -14,6 +14,8 @@ USD Mode (Наличный USD H):
 UZS Mode (Наличный UZS H):
 - tz-5: Rasxod without Party (date == posting_date) - 2 line JE, Multi Currency
 - tz-6: Rasxod with Party (date == posting_date) - 4 line JE, Multi Currency
+- tz-7: Nachislenie without Party (date < posting_date) - 2 JEs with system nachislenie party
+- tz-8: Nachislenie with Party (date < posting_date) - 2 JEs (JE2 has 4 lines)
 """
 
 import frappe
@@ -27,6 +29,10 @@ class JournalEntryCreator:
     USD_MODE = "Наличный USD H"
     UZS_CASH_MODE = "Наличный UZS H"
     UZS_TRANSFER_MODE = "Перечисление UZS"
+    
+    # System parties for nachislenie
+    NACHISLENIE_PARTY_USD = "Nachisleniya uchun USD"
+    NACHISLENIE_PARTY_UZS = "Nachisleniya uchun UZS"
     
     def __init__(self, kassa_rasxod_doc):
         self.doc = kassa_rasxod_doc
@@ -90,13 +96,15 @@ class JournalEntryCreator:
             or "Main - A"
         )
     
+    def _get_nachislenie_party(self):
+        """Get system party for nachislenie based on currency"""
+        return self.NACHISLENIE_PARTY_UZS if self.is_multi_currency else self.NACHISLENIE_PARTY_USD
+    
     def _get_amount(self, item):
         """Get amount based on currency mode"""
         if self.is_multi_currency:
-            # UZS mode - return UZS amount
             return item.get('paid_amount_uzs') or 0
         else:
-            # USD mode - return USD amount
             return item.get('paid_amount_usd') or 0
     
     def _get_usd_amount(self, item):
@@ -104,20 +112,12 @@ class JournalEntryCreator:
         return item.get('paid_amount_usd') or 0
     
     def process_rasxod_item(self, item, idx):
-        """
-        Process a single Rasxod item and create appropriate Journal Entries
-        
-        Cases:
-        - date == posting_date, no party: tz-1/5 (2-line JE)
-        - date == posting_date, with party: tz-2/6 (4-line JE)
-        - date < posting_date, with party: tz-3/4 Nachislenie (2 separate JEs)
-        """
+        """Process a single Rasxod item and create appropriate Journal Entries"""
         item_date = item.get('date')
         party_type = item.get('party_type')
         party = item.get('party')
         has_party = bool(party_type and party)
         
-        # Get expense account and cost center
         expense_account = item.get('category')
         if not expense_account:
             return
@@ -130,56 +130,41 @@ class JournalEntryCreator:
         expense_cost_center = item.get('cost_center') or self.main_cost_center
         izoh = item.get('izoh', '')
         
-        # Determine which case
-        if str(item_date) == str(self.doc.posting_date):
-            # Date matches posting date
+        is_same_date = str(item_date) == str(self.doc.posting_date)
+        
+        if is_same_date:
             if has_party:
                 # tz-2/6: With party, same date
                 self._create_je_with_party_same_date(
-                    expense_account=expense_account,
-                    amount=amount,
-                    usd_amount=usd_amount,
-                    expense_cost_center=expense_cost_center,
-                    party_type=party_type,
-                    party=party,
-                    item_idx=idx,
-                    izoh=izoh
+                    expense_account, amount, usd_amount, expense_cost_center,
+                    party_type, party, idx, izoh
                 )
             else:
-                # tz-1/5: Without party
+                # tz-1/5: Without party, same date
                 self._create_je_without_party(
-                    expense_account=expense_account,
-                    amount=amount,
-                    usd_amount=usd_amount,
-                    expense_cost_center=expense_cost_center,
-                    item_idx=idx,
-                    izoh=izoh
+                    expense_account, amount, usd_amount, expense_cost_center,
+                    idx, izoh
                 )
         else:
-            # Date is different (past date) - Nachislenie
-            if has_party:
-                # tz-3/4: Nachislenie with party
-                self._create_nachislenie_entries(
-                    expense_account=expense_account,
-                    amount=amount,
-                    usd_amount=usd_amount,
-                    expense_cost_center=expense_cost_center,
-                    party_type=party_type,
-                    party=party,
-                    item_date=item_date,
-                    item_idx=idx,
-                    izoh=izoh
-                )
+            # Nachislenie - date < posting_date
+            if self.is_multi_currency:
+                if has_party:
+                    # tz-8: UZS nachislenie with party
+                    self._create_uzs_nachislenie_with_party(
+                        expense_account, amount, usd_amount, expense_cost_center,
+                        party_type, party, item_date, idx, izoh
+                    )
+                else:
+                    # tz-7: UZS nachislenie without party
+                    self._create_uzs_nachislenie_without_party(
+                        expense_account, amount, usd_amount, expense_cost_center,
+                        item_date, idx, izoh
+                    )
             else:
-                # Without party but different date - just create expense entry on item date
-                self._create_je_without_party(
-                    expense_account=expense_account,
-                    amount=amount,
-                    usd_amount=usd_amount,
-                    expense_cost_center=expense_cost_center,
-                    item_idx=idx,
-                    izoh=izoh,
-                    posting_date=item_date
+                # tz-3/4: USD nachislenie
+                self._create_usd_nachislenie(
+                    expense_account, amount, usd_amount, expense_cost_center,
+                    party_type, party, item_date, idx, izoh
                 )
     
     def _create_journal_entry(self, posting_date=None):
@@ -188,27 +173,17 @@ class JournalEntryCreator:
         je.voucher_type = "Journal Entry"
         je.posting_date = posting_date or self.doc.posting_date
         je.company = self.company
-        
         if self.is_multi_currency:
             je.multi_currency = 1
-        
         return je
     
     def _create_je_without_party(self, expense_account, amount, usd_amount, expense_cost_center, 
                                   item_idx, izoh='', posting_date=None):
-        """
-        tz-1 (USD) / tz-5 (UZS): Create Journal Entry when Party is empty
-        
-        Entries:
-        - Credit: Cash Account (1112/1113) → Main cost center
-        - Debit: Expense Account (5209) → Expense cost center
-        """
+        """tz-1/5: Create 2-line JE when Party is empty"""
         je = self._create_journal_entry(posting_date)
         je.user_remark = f"Auto-created from Kassa Rasxod {self.doc.name}, Row #{item_idx}. {izoh}"
         
         if self.is_multi_currency:
-            # UZS mode - amounts in account currency (UZS), with exchange rate
-            # Row 1: Credit Cash Account (UZS)
             je.append("accounts", {
                 "account": self.cash_account,
                 "credit_in_account_currency": amount,
@@ -216,8 +191,6 @@ class JournalEntryCreator:
                 "exchange_rate": self.exchange_rate,
                 "cost_center": self.main_cost_center
             })
-            
-            # Row 2: Debit Expense Account (USD account, but entry in USD equivalent)
             je.append("accounts", {
                 "account": expense_account,
                 "debit_in_account_currency": usd_amount,
@@ -226,16 +199,12 @@ class JournalEntryCreator:
                 "cost_center": expense_cost_center
             })
         else:
-            # USD mode - simple USD amounts
-            # Row 1: Credit Cash Account
             je.append("accounts", {
                 "account": self.cash_account,
                 "credit_in_account_currency": amount,
                 "debit_in_account_currency": 0,
                 "cost_center": self.main_cost_center
             })
-            
-            # Row 2: Debit Expense Account
             je.append("accounts", {
                 "account": expense_account,
                 "debit_in_account_currency": amount,
@@ -245,73 +214,18 @@ class JournalEntryCreator:
         
         je.insert()
         je.submit()
-        
-        frappe.msgprint(
-            _("Journal Entry {0} created for Row #{1}").format(
-                frappe.utils.get_link_to_form("Journal Entry", je.name), 
-                item_idx
-            )
-        )
-        
+        frappe.msgprint(_("Journal Entry {0} created for Row #{1}").format(
+            frappe.utils.get_link_to_form("Journal Entry", je.name), item_idx
+        ))
         return je.name
     
     def _create_je_with_party_same_date(self, expense_account, amount, usd_amount, expense_cost_center,
                                         party_type, party, item_idx, izoh=''):
-        """
-        tz-2 (USD) / tz-6 (UZS): Create Journal Entry when Party is filled and date == posting_date
-        
-        Entries (4 lines):
-        - Row 1: Credit Payable (2110/2111) with Party → Main cost center
-        - Row 2: Debit Cash (1112/1113) → Main cost center
-        - Row 3: Credit Cash (1112/1113) → Main cost center
-        - Row 4: Debit Expense (5209) → Expense cost center
-        """
+        """tz-2/6: Create 4-line JE when Party is filled and date == posting_date"""
         je = self._create_journal_entry()
         je.user_remark = f"Auto-created from Kassa Rasxod {self.doc.name}, Row #{item_idx}. {izoh}"
         
         if self.is_multi_currency:
-            # UZS mode with multi-currency
-            
-            # Row 1: Credit Payable with Party (UZS)
-            je.append("accounts", {
-                "account": self.default_payable_account,
-                "credit_in_account_currency": amount,
-                "debit_in_account_currency": 0,
-                "party_type": party_type,
-                "party": party,
-                "exchange_rate": self.exchange_rate,
-                "cost_center": self.main_cost_center
-            })
-            
-            # Row 2: Debit Cash (payment to party) - UZS
-            je.append("accounts", {
-                "account": self.cash_account,
-                "debit_in_account_currency": amount,
-                "credit_in_account_currency": 0,
-                "exchange_rate": self.exchange_rate,
-                "cost_center": self.main_cost_center
-            })
-            
-            # Row 3: Credit Cash (expense payment) - UZS
-            je.append("accounts", {
-                "account": self.cash_account,
-                "credit_in_account_currency": amount,
-                "debit_in_account_currency": 0,
-                "exchange_rate": self.exchange_rate,
-                "cost_center": self.main_cost_center
-            })
-            
-            # Row 4: Debit Expense (USD account)
-            je.append("accounts", {
-                "account": expense_account,
-                "debit_in_account_currency": usd_amount,
-                "credit_in_account_currency": 0,
-                "exchange_rate": 1,
-                "cost_center": expense_cost_center
-            })
-        else:
-            # USD mode - simple
-            
             # Row 1: Credit Payable with Party
             je.append("accounts", {
                 "account": self.default_payable_account,
@@ -319,26 +233,54 @@ class JournalEntryCreator:
                 "debit_in_account_currency": 0,
                 "party_type": party_type,
                 "party": party,
+                "exchange_rate": self.exchange_rate,
                 "cost_center": self.main_cost_center
             })
-            
-            # Row 2: Debit Cash (payment to party)
+            # Row 2: Debit Cash
+            je.append("accounts", {
+                "account": self.cash_account,
+                "debit_in_account_currency": amount,
+                "credit_in_account_currency": 0,
+                "exchange_rate": self.exchange_rate,
+                "cost_center": self.main_cost_center
+            })
+            # Row 3: Credit Cash
+            je.append("accounts", {
+                "account": self.cash_account,
+                "credit_in_account_currency": amount,
+                "debit_in_account_currency": 0,
+                "exchange_rate": self.exchange_rate,
+                "cost_center": self.main_cost_center
+            })
+            # Row 4: Debit Expense
+            je.append("accounts", {
+                "account": expense_account,
+                "debit_in_account_currency": usd_amount,
+                "credit_in_account_currency": 0,
+                "exchange_rate": 1,
+                "cost_center": expense_cost_center
+            })
+        else:
+            je.append("accounts", {
+                "account": self.default_payable_account,
+                "credit_in_account_currency": amount,
+                "debit_in_account_currency": 0,
+                "party_type": party_type,
+                "party": party,
+                "cost_center": self.main_cost_center
+            })
             je.append("accounts", {
                 "account": self.cash_account,
                 "debit_in_account_currency": amount,
                 "credit_in_account_currency": 0,
                 "cost_center": self.main_cost_center
             })
-            
-            # Row 3: Credit Cash (expense payment)
             je.append("accounts", {
                 "account": self.cash_account,
                 "credit_in_account_currency": amount,
                 "debit_in_account_currency": 0,
                 "cost_center": self.main_cost_center
             })
-            
-            # Row 4: Debit Expense
             je.append("accounts", {
                 "account": expense_account,
                 "debit_in_account_currency": amount,
@@ -348,116 +290,58 @@ class JournalEntryCreator:
         
         je.insert()
         je.submit()
-        
-        frappe.msgprint(
-            _("Journal Entry {0} created for Row #{1} with Party {2}").format(
-                frappe.utils.get_link_to_form("Journal Entry", je.name), 
-                item_idx, 
-                party
-            )
-        )
-        
+        frappe.msgprint(_("Journal Entry {0} created for Row #{1} with Party {2}").format(
+            frappe.utils.get_link_to_form("Journal Entry", je.name), item_idx, party
+        ))
         return je.name
     
-    def _create_nachislenie_entries(self, expense_account, amount, usd_amount, expense_cost_center,
-                                    party_type, party, item_date, item_idx, izoh=''):
-        """
-        tz-3/4: Nachislenie - Create 2 Journal Entries when Party filled and date < posting_date
+    def _create_usd_nachislenie(self, expense_account, amount, usd_amount, expense_cost_center,
+                                party_type, party, item_date, item_idx, izoh=''):
+        """tz-3/4: USD Nachislenie - 2 separate JEs"""
+        nachislenie_party = self._get_nachislenie_party()
+        actual_party_type = party_type or "Supplier"
+        actual_party = party or nachislenie_party
         
-        JE-1 on posting_date (payment):
-        - Row 1: Debit Payable (2110/2111) with Party → Main cost center
-        - Row 2: Credit Cash (1112/1113) → Main cost center
-        
-        JE-2 on item_date (expense accrual):
-        - Row 1: Credit Payable (2110/2111) with Party → Main cost center
-        - Row 2: Debit Expense (5207) → Expense cost center
-        """
-        # JE-1: Payment entry on posting_date
+        # JE-1: Payment on posting_date
         je1 = self._create_journal_entry()
         je1.user_remark = f"Payment - Auto-created from Kassa Rasxod {self.doc.name}, Row #{item_idx}. {izoh}"
         
-        if self.is_multi_currency:
-            # Debit Payable (clearing the liability) - UZS
-            je1.append("accounts", {
-                "account": self.default_payable_account,
-                "debit_in_account_currency": amount,
-                "credit_in_account_currency": 0,
-                "party_type": party_type,
-                "party": party,
-                "exchange_rate": self.exchange_rate,
-                "cost_center": self.main_cost_center
-            })
-            
-            # Credit Cash (payment out) - UZS
-            je1.append("accounts", {
-                "account": self.cash_account,
-                "credit_in_account_currency": amount,
-                "debit_in_account_currency": 0,
-                "exchange_rate": self.exchange_rate,
-                "cost_center": self.main_cost_center
-            })
-        else:
-            # USD mode
-            je1.append("accounts", {
-                "account": self.default_payable_account,
-                "debit_in_account_currency": amount,
-                "credit_in_account_currency": 0,
-                "party_type": party_type,
-                "party": party,
-                "cost_center": self.main_cost_center
-            })
-            
-            je1.append("accounts", {
-                "account": self.cash_account,
-                "credit_in_account_currency": amount,
-                "debit_in_account_currency": 0,
-                "cost_center": self.main_cost_center
-            })
+        je1.append("accounts", {
+            "account": self.default_payable_account,
+            "debit_in_account_currency": amount,
+            "credit_in_account_currency": 0,
+            "party_type": actual_party_type,
+            "party": actual_party,
+            "cost_center": self.main_cost_center
+        })
+        je1.append("accounts", {
+            "account": self.cash_account,
+            "credit_in_account_currency": amount,
+            "debit_in_account_currency": 0,
+            "cost_center": self.main_cost_center
+        })
         
         je1.insert()
         je1.submit()
         
-        # JE-2: Expense accrual on item_date
+        # JE-2: Accrual on item_date
         je2 = self._create_journal_entry(item_date)
         je2.user_remark = f"Accrual - Auto-created from Kassa Rasxod {self.doc.name}, Row #{item_idx}. {izoh}"
         
-        if self.is_multi_currency:
-            # Credit Payable (creating liability) - UZS
-            je2.append("accounts", {
-                "account": self.default_payable_account,
-                "credit_in_account_currency": amount,
-                "debit_in_account_currency": 0,
-                "party_type": party_type,
-                "party": party,
-                "exchange_rate": self.exchange_rate,
-                "cost_center": self.main_cost_center
-            })
-            
-            # Debit Expense - USD account
-            je2.append("accounts", {
-                "account": expense_account,
-                "debit_in_account_currency": usd_amount,
-                "credit_in_account_currency": 0,
-                "exchange_rate": 1,
-                "cost_center": expense_cost_center
-            })
-        else:
-            # USD mode
-            je2.append("accounts", {
-                "account": self.default_payable_account,
-                "credit_in_account_currency": amount,
-                "debit_in_account_currency": 0,
-                "party_type": party_type,
-                "party": party,
-                "cost_center": self.main_cost_center
-            })
-            
-            je2.append("accounts", {
-                "account": expense_account,
-                "debit_in_account_currency": amount,
-                "credit_in_account_currency": 0,
-                "cost_center": expense_cost_center
-            })
+        je2.append("accounts", {
+            "account": self.default_payable_account,
+            "credit_in_account_currency": amount,
+            "debit_in_account_currency": 0,
+            "party_type": actual_party_type,
+            "party": actual_party,
+            "cost_center": self.main_cost_center
+        })
+        je2.append("accounts", {
+            "account": expense_account,
+            "debit_in_account_currency": amount,
+            "credit_in_account_currency": 0,
+            "cost_center": expense_cost_center
+        })
         
         je2.insert()
         je2.submit()
@@ -473,7 +357,181 @@ class JournalEntryCreator:
                 item_date
             )
         )
+        return je1.name, je2.name
+    
+    def _create_uzs_nachislenie_without_party(self, expense_account, amount, usd_amount, 
+                                               expense_cost_center, item_date, item_idx, izoh=''):
+        """
+        tz-7: UZS Nachislenie without Party
         
+        JE-1 on item_date (Accrual):
+        - Credit 2111 (Nachisleniya uchun UZS) 
+        - Debit Expense
+        
+        JE-2 on posting_date (Payment):
+        - Credit Cash
+        - Debit 2111 (Nachisleniya uchun UZS)
+        """
+        nachislenie_party = self._get_nachislenie_party()
+        
+        # JE-1: Accrual on item_date
+        je1 = self._create_journal_entry(item_date)
+        je1.user_remark = f"Accrual - Auto-created from Kassa Rasxod {self.doc.name}, Row #{item_idx}. {izoh}"
+        
+        je1.append("accounts", {
+            "account": self.default_payable_account,
+            "credit_in_account_currency": amount,
+            "debit_in_account_currency": 0,
+            "party_type": "Supplier",
+            "party": nachislenie_party,
+            "exchange_rate": self.exchange_rate,
+            "cost_center": self.main_cost_center
+        })
+        je1.append("accounts", {
+            "account": expense_account,
+            "debit_in_account_currency": usd_amount,
+            "credit_in_account_currency": 0,
+            "exchange_rate": 1,
+            "cost_center": expense_cost_center
+        })
+        
+        je1.insert()
+        je1.submit()
+        
+        # JE-2: Payment on posting_date
+        je2 = self._create_journal_entry()
+        je2.user_remark = f"Payment - Auto-created from Kassa Rasxod {self.doc.name}, Row #{item_idx}. {izoh}"
+        
+        je2.append("accounts", {
+            "account": self.cash_account,
+            "credit_in_account_currency": amount,
+            "debit_in_account_currency": 0,
+            "exchange_rate": self.exchange_rate,
+            "cost_center": self.main_cost_center
+        })
+        je2.append("accounts", {
+            "account": self.default_payable_account,
+            "debit_in_account_currency": amount,
+            "credit_in_account_currency": 0,
+            "party_type": "Supplier",
+            "party": nachislenie_party,
+            "exchange_rate": self.exchange_rate,
+            "cost_center": self.main_cost_center
+        })
+        
+        je2.insert()
+        je2.submit()
+        
+        frappe.msgprint(
+            _("UZS Nachislenie: 2 Journal Entries created for Row #{0}:<br>"
+              "Accrual JE: {1} (Date: {2})<br>"
+              "Payment JE: {3} (Date: {4})").format(
+                item_idx,
+                frappe.utils.get_link_to_form("Journal Entry", je1.name),
+                item_date,
+                frappe.utils.get_link_to_form("Journal Entry", je2.name),
+                self.doc.posting_date
+            )
+        )
+        return je1.name, je2.name
+    
+    def _create_uzs_nachislenie_with_party(self, expense_account, amount, usd_amount,
+                                           expense_cost_center, party_type, party,
+                                           item_date, item_idx, izoh=''):
+        """
+        tz-8: UZS Nachislenie with Party
+        
+        JE-1 on item_date (Accrual) - 2 lines:
+        - Debit 2111 (Nachisleniya uchun UZS)
+        - Credit Cash
+        
+        JE-2 on posting_date (Payment + Transfer) - 4 lines:
+        - Credit 2111 (actual party - Sektor alumin)
+        - Debit Cash
+        - Credit Cash  
+        - Debit 2111 (Nachisleniya uchun UZS)
+        """
+        nachislenie_party = self._get_nachislenie_party()
+        
+        # JE-1: Accrual on item_date
+        je1 = self._create_journal_entry(item_date)
+        je1.user_remark = f"Accrual - Auto-created from Kassa Rasxod {self.doc.name}, Row #{item_idx}. {izoh}"
+        
+        je1.append("accounts", {
+            "account": self.default_payable_account,
+            "debit_in_account_currency": amount,
+            "credit_in_account_currency": 0,
+            "party_type": "Supplier",
+            "party": nachislenie_party,
+            "exchange_rate": self.exchange_rate,
+            "cost_center": self.main_cost_center
+        })
+        je1.append("accounts", {
+            "account": self.cash_account,
+            "credit_in_account_currency": amount,
+            "debit_in_account_currency": 0,
+            "exchange_rate": self.exchange_rate,
+            "cost_center": self.main_cost_center
+        })
+        
+        je1.insert()
+        je1.submit()
+        
+        # JE-2: Payment on posting_date - 4 lines
+        je2 = self._create_journal_entry()
+        je2.user_remark = f"Payment - Auto-created from Kassa Rasxod {self.doc.name}, Row #{item_idx}. {izoh}"
+        
+        # Row 1: Credit Payable (actual party)
+        je2.append("accounts", {
+            "account": self.default_payable_account,
+            "credit_in_account_currency": amount,
+            "debit_in_account_currency": 0,
+            "party_type": party_type,
+            "party": party,
+            "exchange_rate": self.exchange_rate,
+            "cost_center": self.main_cost_center
+        })
+        # Row 2: Debit Cash
+        je2.append("accounts", {
+            "account": self.cash_account,
+            "debit_in_account_currency": amount,
+            "credit_in_account_currency": 0,
+            "exchange_rate": self.exchange_rate,
+            "cost_center": self.main_cost_center
+        })
+        # Row 3: Credit Cash
+        je2.append("accounts", {
+            "account": self.cash_account,
+            "credit_in_account_currency": amount,
+            "debit_in_account_currency": 0,
+            "exchange_rate": self.exchange_rate,
+            "cost_center": self.main_cost_center
+        })
+        # Row 4: Debit Payable (nachislenie party)
+        je2.append("accounts", {
+            "account": self.default_payable_account,
+            "debit_in_account_currency": amount,
+            "credit_in_account_currency": 0,
+            "party_type": "Supplier",
+            "party": nachislenie_party,
+            "exchange_rate": self.exchange_rate,
+            "cost_center": self.main_cost_center
+        })
+        
+        je2.insert()
+        je2.submit()
+        
+        frappe.msgprint(
+            _("UZS Nachislenie with Party: 2 Journal Entries created for Row #{0}:<br>"
+              "Accrual JE: {1} (Date: {2})<br>"
+              "Payment JE: {3} (Date: {4})").format(
+                item_idx,
+                frappe.utils.get_link_to_form("Journal Entry", je1.name),
+                item_date,
+                frappe.utils.get_link_to_form("Journal Entry", je2.name),
+                self.doc.posting_date
+            )
+        )
         return je1.name, je2.name
 
 

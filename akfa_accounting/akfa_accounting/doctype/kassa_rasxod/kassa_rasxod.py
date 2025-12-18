@@ -122,16 +122,29 @@ class KassaRasxod(Document):
                 _("Row #{0}: Cost Center is required for Расход").format(idx),
                 title=_("Validation Error")
             )
-        
+
         if not item.get('category'):
             frappe.throw(
                 _("Row #{0}: Category (Тип 1) is required for Расход").format(idx),
                 title=_("Validation Error")
             )
-        
+
         if not item.get('date'):
             frappe.throw(
                 _("Row #{0}: Date is required for Расход").format(idx),
+                title=_("Validation Error")
+            )
+
+        # Item date cannot be greater than posting_date
+        from frappe.utils import getdate
+        item_date = getdate(item.get('date'))
+        posting_date = getdate(self.posting_date)
+
+        if item_date > posting_date:
+            frappe.throw(
+                _("Row #{0}: Item date ({1}) cannot be greater than Posting Date ({2})").format(
+                    idx, item.get('date'), self.posting_date
+                ),
                 title=_("Validation Error")
             )
     

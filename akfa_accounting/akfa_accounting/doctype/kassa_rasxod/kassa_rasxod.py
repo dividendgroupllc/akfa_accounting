@@ -176,22 +176,26 @@ class KassaRasxod(Document):
     # ==================== Journal Entry Creation ====================
     
     def _create_journal_entries(self):
-        """Create Journal Entries for Rasxod items"""
+        """Create Journal Entries for Rasxod and Podochot Prixod items"""
         if not self.items_data:
             return
-        
+
         try:
             items = json.loads(self.items_data)
         except (json.JSONDecodeError, TypeError):
             return
-        
+
         je_creator = JournalEntryCreator(self)
-        
+
         for idx, item in enumerate(items, start=1):
-            if item.get('rasxod_podochot') != "Расход":
-                continue
-            
-            je_creator.process_rasxod_item(item, idx)
+            tip = item.get('rasxod_podochot')
+
+            if tip == "Расход":
+                je_creator.process_rasxod_item(item, idx)
+            elif tip == "Подотчет приход":
+                je_creator.process_podochot_prixod_item(item, idx)
+            elif tip == "Подотчет расход":
+                je_creator.process_podochot_rasxod_item(item, idx)
 
 
 # ==================== Whitelisted API Methods ====================

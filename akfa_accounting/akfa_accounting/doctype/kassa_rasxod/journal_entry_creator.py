@@ -116,10 +116,168 @@ class JournalEntryCreator:
         """Get USD equivalent amount"""
         return item.get('paid_amount_usd') or 0
     
+    def process_podochot_prixod_item(self, item, idx):
+        """
+        Process Подотчет приход item - Employee returns money to cash
+
+        Creates 2-line Journal Entry:
+        - Row 1: Debit Cash Account (money comes in)
+        - Row 2: Credit Payable Account with Employee (reduces employee debt)
+
+        Note: Always uses posting_date (no Nachislenie logic)
+        """
+        employee = item.get('employee')
+        if not employee:
+            return
+
+        amount = self._get_amount(item)
+        usd_amount = self._get_usd_amount(item)
+        if not amount and not usd_amount:
+            return
+
+        izoh = item.get('izoh', '')
+
+        # Create Journal Entry
+        je = self._create_journal_entry()
+        je.user_remark = f"Podochot Prixod - Auto-created from Kassa Rasxod {self.doc.name}, Row #{idx}. {izoh}"
+
+        if self.is_multi_currency:
+            # UZS mode with multi-currency
+            # Row 1: Debit Cash (money received)
+            je.append("accounts", {
+                "account": self.cash_account,
+                "debit_in_account_currency": amount,
+                "credit_in_account_currency": 0,
+                "exchange_rate": self.exchange_rate,
+                "cost_center": self.main_cost_center
+            })
+
+            # Row 2: Credit Payable with Employee (reduce debt)
+            je.append("accounts", {
+                "account": self.default_payable_account,
+                "credit_in_account_currency": amount,
+                "debit_in_account_currency": 0,
+                "party_type": "Employee",
+                "party": employee,
+                "exchange_rate": self.exchange_rate,
+                "cost_center": self.main_cost_center
+            })
+        else:
+            # USD mode - simple
+            # Row 1: Debit Cash
+            je.append("accounts", {
+                "account": self.cash_account,
+                "debit_in_account_currency": amount,
+                "credit_in_account_currency": 0,
+                "cost_center": self.main_cost_center
+            })
+
+            # Row 2: Credit Payable with Employee
+            je.append("accounts", {
+                "account": self.default_payable_account,
+                "credit_in_account_currency": amount,
+                "debit_in_account_currency": 0,
+                "party_type": "Employee",
+                "party": employee,
+                "cost_center": self.main_cost_center
+            })
+
+        je.insert()
+        je.submit()
+
+        frappe.msgprint(
+            _("Journal Entry {0} created for Podochot Prixod Row #{1}, Employee {2}").format(
+                frappe.utils.get_link_to_form("Journal Entry", je.name),
+                idx,
+                employee
+            )
+        )
+
+        return je.name
+
+    def process_podochot_rasxod_item(self, item, idx):
+        """
+        Process Подотчет расход item - Employee receives money from cash
+
+        Creates 2-line Journal Entry:
+        - Row 1: Debit Payable Account with Employee (increases employee debt)
+        - Row 2: Credit Cash Account (money goes out)
+
+        Note: Always uses posting_date (no Nachislenie logic)
+        """
+        employee = item.get('employee')
+        if not employee:
+            return
+
+        amount = self._get_amount(item)
+        usd_amount = self._get_usd_amount(item)
+        if not amount and not usd_amount:
+            return
+
+        izoh = item.get('izoh', '')
+
+        # Create Journal Entry
+        je = self._create_journal_entry()
+        je.user_remark = f"Podochot Rasxod - Auto-created from Kassa Rasxod {self.doc.name}, Row #{idx}. {izoh}"
+
+        if self.is_multi_currency:
+            # UZS mode with multi-currency
+            # Row 1: Debit Payable with Employee (increase debt)
+            je.append("accounts", {
+                "account": self.default_payable_account,
+                "debit_in_account_currency": amount,
+                "credit_in_account_currency": 0,
+                "party_type": "Employee",
+                "party": employee,
+                "exchange_rate": self.exchange_rate,
+                "cost_center": self.main_cost_center
+            })
+
+            # Row 2: Credit Cash (money paid out)
+            je.append("accounts", {
+                "account": self.cash_account,
+                "credit_in_account_currency": amount,
+                "debit_in_account_currency": 0,
+                "exchange_rate": self.exchange_rate,
+                "cost_center": self.main_cost_center
+            })
+        else:
+            # USD mode - simple
+            # Row 1: Debit Payable with Employee
+            je.append("accounts", {
+                "account": self.default_payable_account,
+                "debit_in_account_currency": amount,
+                "credit_in_account_currency": 0,
+                "party_type": "Employee",
+                "party": employee,
+                "cost_center": self.main_cost_center
+            })
+
+            # Row 2: Credit Cash
+            je.append("accounts", {
+                "account": self.cash_account,
+                "credit_in_account_currency": amount,
+                "debit_in_account_currency": 0,
+                "cost_center": self.main_cost_center
+            })
+
+        je.insert()
+        je.submit()
+
+        frappe.msgprint(
+            _("Journal Entry {0} created for Podochot Rasxod Row #{1}, Employee {2}").format(
+                frappe.utils.get_link_to_form("Journal Entry", je.name),
+                idx,
+                employee
+            )
+        )
+
+        return je.name
+
     def process_rasxod_item(self, item, idx):
         """
         Process a single Rasxod item and create appropriate Journal Entries
-        
+
         Cases:
         - date == posting_date, no party: tz-1/5 (2-line JE)
         - date == posting_date, with party: tz-2/6 (4-line JE)

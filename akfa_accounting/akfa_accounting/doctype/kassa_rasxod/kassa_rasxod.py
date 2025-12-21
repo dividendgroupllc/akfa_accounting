@@ -176,7 +176,7 @@ class KassaRasxod(Document):
     # ==================== Journal Entry Creation ====================
     
     def _create_journal_entries(self):
-        """Create Journal Entries for Rasxod and Podochot Prixod items"""
+        """Create Journal Entries for all transaction types"""
         if not self.items_data:
             return
 
@@ -196,6 +196,8 @@ class KassaRasxod(Document):
                 je_creator.process_podochot_prixod_item(item, idx)
             elif tip == "Подотчет расход":
                 je_creator.process_podochot_rasxod_item(item, idx)
+            elif tip == "Коплашга":
+                je_creator.process_koplashga_item(item, idx)
 
 
 # ==================== Whitelisted API Methods ====================

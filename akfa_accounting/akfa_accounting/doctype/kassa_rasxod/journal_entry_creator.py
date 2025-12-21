@@ -274,6 +274,234 @@ class JournalEntryCreator:
 
         return je.name
 
+    def process_koplashga_item(self, item, idx):
+        """
+        Process Коплашга item - Transfer between parties via cash
+
+        Case 1: Only Party 1 filled (Party 2 empty):
+        - Row 1: Credit Cash (money goes out)
+        - Row 2: Debit Payable + Party 1 (debt to party increases)
+
+        Case 2: Both Party 1 and Party 2 filled:
+        - Row 1: Credit Payable + Party 2 (receiver gets debt)
+        - Row 2: Debit Cash (money in)
+        - Row 3: Credit Cash (money out)
+        - Row 4: Debit Payable + Party 1 (sender debt reduces)
+
+        Net: Transfer from Party 1 to Party 2 via Cash
+        """
+        party_type = item.get('party_type')
+        party = item.get('party')
+        party_type_2 = item.get('party_type_2')
+        party_2 = item.get('party_2')
+
+        has_party1 = bool(party_type and party)
+        has_party2 = bool(party_type_2 and party_2)
+
+        amount = self._get_amount(item)
+        usd_amount = self._get_usd_amount(item)
+        if not amount and not usd_amount:
+            return
+
+        izoh = item.get('izoh', '')
+
+        if has_party1 and has_party2:
+            # Case 2: Both parties - 4 line JE
+            self._create_koplashga_both_parties(
+                party_type_1=party_type,
+                party_1=party,
+                party_type_2=party_type_2,
+                party_2=party_2,
+                amount=amount,
+                usd_amount=usd_amount,
+                item_idx=idx,
+                izoh=izoh
+            )
+        elif has_party1:
+            # Case 1: Only Party 1 - 2 line JE
+            self._create_koplashga_single_party(
+                party_type=party_type,
+                party=party,
+                amount=amount,
+                usd_amount=usd_amount,
+                item_idx=idx,
+                izoh=izoh
+            )
+
+    def _create_koplashga_single_party(self, party_type, party, amount, usd_amount, item_idx, izoh=''):
+        """
+        Create Journal Entry for Koplashga with single party (Party 2 empty)
+
+        Entries (2 lines):
+        - Row 1: Credit Cash Account (money goes out)
+        - Row 2: Debit Payable with Party (debt to party increases)
+        """
+        je = self._create_journal_entry()
+        je.user_remark = f"Koplashga - Auto-created from Kassa Rasxod {self.doc.name}, Row #{item_idx}. {izoh}"
+
+        if self.is_multi_currency:
+            # UZS mode
+            # Row 1: Credit Cash
+            je.append("accounts", {
+                "account": self.cash_account,
+                "credit_in_account_currency": amount,
+                "debit_in_account_currency": 0,
+                "exchange_rate": self.exchange_rate,
+                "cost_center": self.main_cost_center
+            })
+
+            # Row 2: Debit Payable with Party
+            je.append("accounts", {
+                "account": self.default_payable_account,
+                "debit_in_account_currency": amount,
+                "credit_in_account_currency": 0,
+                "party_type": party_type,
+                "party": party,
+                "exchange_rate": self.exchange_rate,
+                "cost_center": self.main_cost_center
+            })
+        else:
+            # USD mode
+            # Row 1: Credit Cash
+            je.append("accounts", {
+                "account": self.cash_account,
+                "credit_in_account_currency": amount,
+                "debit_in_account_currency": 0,
+                "cost_center": self.main_cost_center
+            })
+
+            # Row 2: Debit Payable with Party
+            je.append("accounts", {
+                "account": self.default_payable_account,
+                "debit_in_account_currency": amount,
+                "credit_in_account_currency": 0,
+                "party_type": party_type,
+                "party": party,
+                "cost_center": self.main_cost_center
+            })
+
+        je.insert()
+        je.submit()
+
+        frappe.msgprint(
+            _("Journal Entry {0} created for Koplashga Row #{1}, Party {2}").format(
+                frappe.utils.get_link_to_form("Journal Entry", je.name),
+                item_idx,
+                party
+            )
+        )
+
+        return je.name
+
+    def _create_koplashga_both_parties(self, party_type_1, party_1, party_type_2, party_2,
+                                       amount, usd_amount, item_idx, izoh=''):
+        """
+        Create Journal Entry for Koplashga with both parties filled
+
+        Entries (4 lines):
+        - Row 1: Credit Payable + Party 2 (receiver)
+        - Row 2: Debit Cash (money in)
+        - Row 3: Credit Cash (money out)
+        - Row 4: Debit Payable + Party 1 (sender)
+
+        Net Effect: Transfer from Party 1 to Party 2 via Cash
+        """
+        je = self._create_journal_entry()
+        je.user_remark = f"Koplashga Transfer - Auto-created from Kassa Rasxod {self.doc.name}, Row #{item_idx}. {izoh}"
+
+        if self.is_multi_currency:
+            # UZS mode
+            # Row 1: Credit Payable with Party 2 (receiver)
+            je.append("accounts", {
+                "account": self.default_payable_account,
+                "credit_in_account_currency": amount,
+                "debit_in_account_currency": 0,
+                "party_type": party_type_2,
+                "party": party_2,
+                "exchange_rate": self.exchange_rate,
+                "cost_center": self.main_cost_center
+            })
+
+            # Row 2: Debit Cash (money comes in)
+            je.append("accounts", {
+                "account": self.cash_account,
+                "debit_in_account_currency": amount,
+                "credit_in_account_currency": 0,
+                "exchange_rate": self.exchange_rate,
+                "cost_center": self.main_cost_center
+            })
+
+            # Row 3: Credit Cash (money goes out)
+            je.append("accounts", {
+                "account": self.cash_account,
+                "credit_in_account_currency": amount,
+                "debit_in_account_currency": 0,
+                "exchange_rate": self.exchange_rate,
+                "cost_center": self.main_cost_center
+            })
+
+            # Row 4: Debit Payable with Party 1 (sender)
+            je.append("accounts", {
+                "account": self.default_payable_account,
+                "debit_in_account_currency": amount,
+                "credit_in_account_currency": 0,
+                "party_type": party_type_1,
+                "party": party_1,
+                "exchange_rate": self.exchange_rate,
+                "cost_center": self.main_cost_center
+            })
+        else:
+            # USD mode
+            # Row 1: Credit Payable with Party 2
+            je.append("accounts", {
+                "account": self.default_payable_account,
+                "credit_in_account_currency": amount,
+                "debit_in_account_currency": 0,
+                "party_type": party_type_2,
+                "party": party_2,
+                "cost_center": self.main_cost_center
+            })
+
+            # Row 2: Debit Cash
+            je.append("accounts", {
+                "account": self.cash_account,
+                "debit_in_account_currency": amount,
+                "credit_in_account_currency": 0,
+                "cost_center": self.main_cost_center
+            })
+
+            # Row 3: Credit Cash
+            je.append("accounts", {
+                "account": self.cash_account,
+                "credit_in_account_currency": amount,
+                "debit_in_account_currency": 0,
+                "cost_center": self.main_cost_center
+            })
+
+            # Row 4: Debit Payable with Party 1
+            je.append("accounts", {
+                "account": self.default_payable_account,
+                "debit_in_account_currency": amount,
+                "credit_in_account_currency": 0,
+                "party_type": party_type_1,
+                "party": party_1,
+                "cost_center": self.main_cost_center
+            })
+
+        je.insert()
+        je.submit()
+
+        frappe.msgprint(
+            _("Journal Entry {0} created for Koplashga Transfer Row #{1}: {2} → {3}").format(
+                frappe.utils.get_link_to_form("Journal Entry", je.name),
+                item_idx,
+                party_1,
+                party_2
+            )
+        )
+
+        return je.name
+
     def process_rasxod_item(self, item, idx):
         """
         Process a single Rasxod item and create appropriate Journal Entries

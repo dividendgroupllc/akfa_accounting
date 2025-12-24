@@ -17,7 +17,7 @@ fixtures = [
 	},
 	{
 		"dt": "Property Setter",
-		"filters": [["doc_type", "in", ["Project", "Vehicle"]]],
+		"filters": [["doc_type", "in", ["Project", "Vehicle", "Travel Request"]]],
 	},
 	{
 		"dt": "Mode of Payment",

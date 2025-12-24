@@ -27,6 +27,19 @@ def get_trip_balance(trip_id):
 
 
 @frappe.whitelist()
+def get_trip_path(trip_master):
+	"""Fetch Trip Path Log points sorted by timestamp"""
+	if not trip_master:
+		return []
+	return frappe.get_all(
+		"Trip Path Log",
+		filters={"trip_master": trip_master},
+		fields=["latitude", "longitude", "timestamp", "employee_name", "activity_type"],
+		order_by="timestamp asc",
+	)
+
+
+@frappe.whitelist()
 def create_expense_claim_mobile(trip_master, employee, expense_type, amount, expense_date, description=None, attachment_url=None):
 	"""Whitelisted wrapper for simplified mobile expense claim creation."""
 	return create_expense_claim_mobile_service(

@@ -26,6 +26,8 @@
   "vehicles",
   "section_break_itinerary",
   "itinerary",
+  "section_break_live_map",
+  "live_map_html",
   "section_break_budget",
   "budget_amount",
   "currency",
@@ -154,6 +156,17 @@
    "fieldtype": "Table",
    "label": "Itinerary",
    "options": "Trip Itinerary"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_break_live_map",
+   "fieldtype": "Section Break",
+   "label": "Live Tracking"
+  },
+  {
+   "fieldname": "live_map_html",
+   "fieldtype": "HTML",
+   "label": "Live Map"
   },
   {
    "fieldname": "section_break_budget",

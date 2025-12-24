@@ -128,6 +128,11 @@ frappe.ui.form.on('Trip Master', {
 				});
 			}, __('Actions'));
 		}
+
+		// Live map renderer for submitted trips
+		if (frm.doc.docstatus === 1) {
+			render_live_map(frm);
+		}
 	},
 
 	onload: function(frm) {
@@ -239,3 +244,57 @@ frappe.ui.form.on('Trip Master', {
 		}
 	}
 });
+
+function render_live_map(frm) {
+	const field = frm.get_field('live_map_html');
+	if (!field) return;
+
+	const wrapper = field.$wrapper;
+	wrapper.html('<div id="trip-live-map" style="height:360px;border:1px solid #e5e7eb;border-radius:8px;"></div>');
+
+	frappe.call({
+		method: 'akfa_accounting.api.get_trip_path',
+		args: { trip_master: frm.doc.name },
+		callback: (r) => {
+			const points = (r.message || []).filter(p => p.latitude && p.longitude);
+			if (!points.length) {
+				wrapper.html(__('Check-in loglari yo\'q'));
+				return;
+			}
+			load_leaflet(() => draw_trip_polyline(points));
+		}
+	});
+}
+
+function load_leaflet(done) {
+	ensure_leaflet_css();
+	if (window.L) {
+		done();
+		return;
+	}
+	frappe.require('assets/frappe/js/lib/leaflet/leaflet.js', () => done());
+}
+
+function ensure_leaflet_css() {
+	if (document.getElementById('leaflet-css')) return;
+	const link = document.createElement('link');
+	link.id = 'leaflet-css';
+	link.rel = 'stylesheet';
+	link.href = '/assets/frappe/css/leaflet.css';
+	document.head.appendChild(link);
+}
+
+function draw_trip_polyline(points) {
+	const coords = points.map(p => [parseFloat(p.latitude), parseFloat(p.longitude)]);
+	const map = L.map('trip-live-map');
+	L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
+
+	const polyline = L.polyline(coords, { color: '#e11d48', weight: 4, opacity: 0.9 }).addTo(map);
+	coords.forEach((pt, idx) => {
+		L.circleMarker(pt, { radius: 5, color: '#1d4ed8', fillColor: '#1d4ed8', fillOpacity: 0.9 })
+			.bindPopup(`${points[idx].employee_name || ''}<br>${points[idx].timestamp || ''}`)
+			.addTo(map);
+	});
+
+	map.fitBounds(polyline.getBounds(), { padding: [12, 12] });
+}

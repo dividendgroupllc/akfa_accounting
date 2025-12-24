@@ -1,5 +1,79 @@
 [
  {
+  "charts": [],
+  "content": "[{\"id\":\"hdr_akfa_hr\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Akfa HR</span>\",\"col\":12}},{\"id\":\"shortcut_travel_request\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Travel Request\",\"col\":3}},{\"id\":\"shortcut_expense_claim\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Expense Claim\",\"col\":3}}]",
+  "custom_blocks": [],
+  "docstatus": 0,
+  "doctype": "Workspace",
+  "for_user": "",
+  "hide_custom": 0,
+  "icon": "user",
+  "indicator_color": null,
+  "is_hidden": 0,
+  "label": "Akfa HR",
+  "links": [],
+  "modified": "2025-12-24 14:00:00",
+  "module": "akfa_accounting",
+  "name": "Akfa HR",
+  "number_cards": [],
+  "parent_page": "",
+  "public": 1,
+  "quick_lists": [],
+  "restrict_to_domain": null,
+  "roles": [
+   {
+    "parent": "Akfa HR",
+    "parentfield": "roles",
+    "parenttype": "Workspace",
+    "role": "Employee"
+   },
+   {
+    "parent": "Akfa HR",
+    "parentfield": "roles",
+    "parenttype": "Workspace",
+    "role": "System Manager"
+   }
+  ],
+  "sequence_id": 25.0,
+  "shortcuts": [
+   {
+    "color": "Green",
+    "doc_view": "List",
+    "format": null,
+    "icon": null,
+    "kanban_board": null,
+    "label": "Travel Request",
+    "link_to": "Travel Request",
+    "parent": "Akfa HR",
+    "parentfield": "shortcuts",
+    "parenttype": "Workspace",
+    "report_ref_doctype": null,
+    "restrict_to_domain": null,
+    "stats_filter": null,
+    "type": "DocType",
+    "url": null
+   },
+   {
+    "color": "Orange",
+    "doc_view": "List",
+    "format": null,
+    "icon": null,
+    "kanban_board": null,
+    "label": "Expense Claim",
+    "link_to": "Expense Claim",
+    "parent": "Akfa HR",
+    "parentfield": "shortcuts",
+    "parenttype": "Workspace",
+    "report_ref_doctype": null,
+    "restrict_to_domain": null,
+    "stats_filter": null,
+    "type": "DocType",
+    "url": null
+   }
+  ],
+  "title": "Akfa HR"
+ },
+ {
   "charts": [
    {
     "chart_name": "Fleet Status",

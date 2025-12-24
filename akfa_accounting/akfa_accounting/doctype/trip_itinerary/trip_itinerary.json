@@ -1,0 +1,61 @@
+{
+ "actions": [],
+ "creation": "2025-12-24 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "from_city",
+  "to_city",
+  "departure_datetime",
+  "arrival_datetime",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "from_city",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "From City",
+   "reqd": 1
+  },
+  {
+   "fieldname": "to_city",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "To City",
+   "reqd": 1
+  },
+  {
+   "fieldname": "departure_datetime",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Departure Datetime",
+   "reqd": 1
+  },
+  {
+   "fieldname": "arrival_datetime",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Arrival Datetime",
+   "reqd": 1
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-12-24 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "akfa_accounting",
+ "name": "Trip Itinerary",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

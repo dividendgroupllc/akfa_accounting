@@ -1,0 +1,288 @@
+<style>
+    @page {
+        size: A4;
+        margin: 15mm;
+    }
+
+    body {
+        font-family: "Times New Roman", Times, serif;
+        font-size: 12pt;
+        line-height: 1.5;
+        color: #000;
+    }
+
+    .header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .company-name {
+        font-size: 14pt;
+        font-weight: bold;
+        text-transform: uppercase;
+        margin-bottom: 10px;
+    }
+
+    .doc-title {
+        font-size: 16pt;
+        font-weight: bold;
+        text-transform: uppercase;
+        margin: 20px 0;
+        text-decoration: underline;
+    }
+
+    .doc-number {
+        text-align: right;
+        margin-bottom: 20px;
+    }
+
+    .section {
+        margin: 20px 0;
+    }
+
+    .section-title {
+        font-weight: bold;
+        margin-bottom: 10px;
+        text-decoration: underline;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 15px 0;
+    }
+
+    table th, table td {
+        border: 1px solid #000;
+        padding: 8px;
+        text-align: left;
+        font-size: 11pt;
+    }
+
+    table th {
+        background-color: #f0f0f0;
+        font-weight: bold;
+        text-align: center;
+    }
+
+    .signature-block {
+        margin-top: 50px;
+    }
+
+    .signature-line {
+        display: flex;
+        justify-content: space-between;
+        margin: 30px 0;
+        align-items: flex-end;
+    }
+
+    .signature-title {
+        font-weight: bold;
+        min-width: 150px;
+    }
+
+    .signature-space {
+        border-bottom: 1px solid #000;
+        flex-grow: 1;
+        margin: 0 20px;
+        min-width: 200px;
+    }
+
+    .signature-name {
+        min-width: 200px;
+        text-align: center;
+        font-size: 10pt;
+    }
+
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        margin: 10px 0;
+    }
+
+    .info-label {
+        font-weight: bold;
+        min-width: 200px;
+    }
+
+    .info-value {
+        flex-grow: 1;
+        border-bottom: 1px dotted #000;
+        padding-left: 10px;
+    }
+
+    .text-center {
+        text-align: center;
+    }
+
+    .text-right {
+        text-align: right;
+    }
+
+    .budget-box {
+        border: 2px solid #000;
+        padding: 15px;
+        margin: 20px 0;
+        background-color: #f9f9f9;
+    }
+
+    .budget-amount {
+        font-size: 14pt;
+        font-weight: bold;
+    }
+</style>
+
+<div class="header">
+    <div class="company-name">{{ doc.company }}</div>
+    <div class="doc-title">РАСПОРЯЖЕНИЕ</div>
+    <div class="doc-title">(О командировке / служебной поездке)</div>
+</div>
+
+<div class="doc-number">
+    <strong>№ {{ doc.name }}</strong><br>
+    от {{ frappe.utils.formatdate(doc.posting_date, "dd.MM.yyyy") }}
+</div>
+
+<div class="section">
+    <div class="info-row">
+        <div class="info-label">Направление поездки:</div>
+        <div class="info-value">{{ doc.destination or "Н/Д" }}</div>
+    </div>
+    <div class="info-row">
+        <div class="info-label">Цель поездки:</div>
+        <div class="info-value">{{ doc.purpose or doc.title }}</div>
+    </div>
+    <div class="info-row">
+        <div class="info-label">Период:</div>
+        <div class="info-value">
+            с {{ frappe.utils.formatdate(doc.from_date, "dd.MM.yyyy") }}
+            по {{ frappe.utils.formatdate(doc.to_date, "dd.MM.yyyy") }}
+        </div>
+    </div>
+    <div class="info-row">
+        <div class="info-label">Подразделение:</div>
+        <div class="info-value">{{ doc.employee_group or "Н/Д" }}</div>
+    </div>
+</div>
+
+<div class="section">
+    <div class="section-title">1. СПИСОК КОМАНДИРОВАННЫХ СОТРУДНИКОВ ({{ doc.members|length }} чел.):</div>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 5%">№</th>
+                <th style="width: 15%">Табельный номер</th>
+                <th style="width: 40%">Ф.И.О.</th>
+                <th style="width: 25%">Должность</th>
+                <th style="width: 15%">Статус</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for member in doc.members %}
+            <tr>
+                <td class="text-center">{{ loop.index }}</td>
+                <td>{{ member.employee }}</td>
+                <td>{{ member.employee_name or frappe.db.get_value("Employee", member.employee, "employee_name") }}</td>
+                <td>{{ frappe.db.get_value("Employee", member.employee, "designation") or "-" }}</td>
+                <td class="text-center">
+                    {% if member.is_leader %}
+                        <strong>Руководитель</strong>
+                    {% else %}
+                        Участник
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="section">
+    <div class="section-title">2. ВЫДЕЛЕННЫЙ ТРАНСПОРТ ({{ doc.vehicles|length }} ед.):</div>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 10%">№</th>
+                <th style="width: 30%">Гос. номер</th>
+                <th style="width: 30%">Марка/Модель</th>
+                <th style="width: 30%">Примечание</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for vehicle in doc.vehicles %}
+            <tr>
+                <td class="text-center">{{ loop.index }}</td>
+                <td><strong>{{ vehicle.vehicle }}</strong></td>
+                <td>{{ frappe.db.get_value("Vehicle", vehicle.vehicle, "model") or "-" }}</td>
+                <td>{{ vehicle.remarks or "-" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="section">
+    <div class="section-title">3. ФИНАНСИРОВАНИЕ:</div>
+    <div class="budget-box">
+        <div class="info-row">
+            <div class="info-label">Выделенный бюджет:</div>
+            <div class="budget-amount text-right">
+                {{ frappe.utils.fmt_money(doc.budget_amount, currency=doc.currency) }}
+            </div>
+        </div>
+        <div class="info-row" style="margin-top: 15px">
+            <div class="info-label">Центр затрат:</div>
+            <div class="info-value">{{ doc.cost_center }}</div>
+        </div>
+        {% if doc.project %}
+        <div class="info-row">
+            <div class="info-label">Проект:</div>
+            <div class="info-value">{{ doc.project }}</div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="section">
+    <div class="section-title">4. ОСОБЫЕ УКАЗАНИЯ:</div>
+    <div style="min-height: 50px; border: 1px solid #ccc; padding: 10px; background-color: #fff;">
+        {{ doc.description or "Нет" }}
+    </div>
+</div>
+
+<div class="signature-block">
+    <div class="signature-line">
+        <div class="signature-title">Руководитель:</div>
+        <div class="signature-space"></div>
+        <div class="signature-name">
+            {% set leader = None %}
+            {% for member in doc.members %}
+                {% if member.is_leader %}
+                    {% set leader = member %}
+                {% endif %}
+            {% endfor %}
+            {% if leader %}
+                {{ leader.employee_name or frappe.db.get_value("Employee", leader.employee, "employee_name") }}
+            {% else %}
+                _________________________
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="signature-line">
+        <div class="signature-title">Директор:</div>
+        <div class="signature-space"></div>
+        <div class="signature-name">_________________________</div>
+    </div>
+
+    <div class="signature-line">
+        <div class="signature-title">Гл. Бухгалтер:</div>
+        <div class="signature-space"></div>
+        <div class="signature-name">_________________________</div>
+    </div>
+</div>
+
+<div style="margin-top: 50px; font-size: 10pt; color: #666;">
+    <p><em>Примечание: Данное распоряжение является основанием для выделения финансирования и транспорта.</em></p>
+    <p><em>Документ создан автоматически системой ERPNext. Trip Master: {{ doc.name }}</em></p>
+</div>

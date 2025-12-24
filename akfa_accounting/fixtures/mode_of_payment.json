@@ -1,5 +1,59 @@
 [
  {
+  "accounts": [
+   {
+    "company": "Akfa",
+    "default_account": "1116 - Перечисления UZS Hamidulla - A",
+    "parent": "Перечисления UZS",
+    "parentfield": "accounts",
+    "parenttype": "Mode of Payment"
+   }
+  ],
+  "docstatus": 0,
+  "doctype": "Mode of Payment",
+  "enabled": 1,
+  "mode_of_payment": "Перечисления UZS",
+  "modified": "2025-12-12 12:35:42.510200",
+  "name": "Перечисления UZS",
+  "type": "Cash"
+ },
+ {
+  "accounts": [
+   {
+    "company": "Akfa",
+    "default_account": "1112 - Наличные USD Hamidulla - A",
+    "parent": "Наличный USD H",
+    "parentfield": "accounts",
+    "parenttype": "Mode of Payment"
+   }
+  ],
+  "docstatus": 0,
+  "doctype": "Mode of Payment",
+  "enabled": 1,
+  "mode_of_payment": "Наличный USD H",
+  "modified": "2025-12-12 16:13:46.750417",
+  "name": "Наличный USD H",
+  "type": "Cash"
+ },
+ {
+  "accounts": [
+   {
+    "company": "Akfa",
+    "default_account": "1113 - Наличные UZS Hamidulla - A",
+    "parent": "Наличный UZS H",
+    "parentfield": "accounts",
+    "parenttype": "Mode of Payment"
+   }
+  ],
+  "docstatus": 0,
+  "doctype": "Mode of Payment",
+  "enabled": 1,
+  "mode_of_payment": "Наличный UZS H",
+  "modified": "2025-12-12 16:15:06.842733",
+  "name": "Наличный UZS H",
+  "type": "Cash"
+ },
+ {
   "accounts": [],
   "docstatus": 0,
   "doctype": "Mode of Payment",

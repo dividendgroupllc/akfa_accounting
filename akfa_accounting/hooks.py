@@ -8,16 +8,17 @@ app_license = "mit"
 doctype_js = {
 	"Payment Entry": "public/js/payment_entry.js",
 	"Travel Request": "public/js/travel_request.js",
+	"Expense Claim": "public/js/expense_claim.js",
 }
 
 fixtures = [
 	{
 		"dt": "Custom Field",
-		"filters": [["dt", "in", ["Payment Entry", "Vehicle", "Travel Request", "Employee Advance", "Expense Claim", "Project"]]],
+		"filters": [["dt", "in", ["Payment Entry", "Vehicle", "Travel Request", "Employee Advance", "Expense Claim", "Project", "Expense Claim Detail"]]],
 	},
 	{
 		"dt": "Property Setter",
-		"filters": [["doc_type", "in", ["Project", "Vehicle", "Travel Request"]]],
+		"filters": [["doc_type", "in", ["Project", "Vehicle", "Travel Request", "Expense Claim", "Expense Claim Detail"]]],
 	},
 	{
 		"dt": "Mode of Payment",

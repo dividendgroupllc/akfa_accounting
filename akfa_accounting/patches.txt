@@ -8,3 +8,4 @@ akfa_accounting.patches.pwa_manifest
 akfa_accounting.patches.travel_request_permissions
 akfa_accounting.patches.create_akfa_hr_workspace
 akfa_accounting.patches.trip_master_permissions
+akfa_accounting.patches.fix_trip_path_log_coordinates

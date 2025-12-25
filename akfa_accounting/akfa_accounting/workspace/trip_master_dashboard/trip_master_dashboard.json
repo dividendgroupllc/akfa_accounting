@@ -44,6 +44,17 @@
    "dependencies": "",
    "hidden": 0,
    "is_query_report": 0,
+   "label": "Live Monitoring",
+   "link_count": 0,
+   "link_to": "trip-monitoring",
+   "link_type": "Page",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
    "label": "Trip Path Log",
    "link_count": 0,
    "link_to": "Trip Path Log",
@@ -128,6 +139,12 @@
    "label": "Trip Master",
    "link_to": "Trip Master",
    "type": "DocType"
+  },
+  {
+   "color": "Red",
+   "label": "Live Monitoring",
+   "link_to": "trip-monitoring",
+   "type": "Page"
   },
   {
    "color": "Green",

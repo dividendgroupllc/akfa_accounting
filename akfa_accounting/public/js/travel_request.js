@@ -5,25 +5,53 @@ frappe.ui.form.on('Travel Request', {
 });
 
 function render_itinerary_ui(frm) {
-	if (!has_itinerary(frm)) {
-		return;
-	}
-
 	ensure_styles();
-	const itinerary = frm.doc.itinerary || [];
-	const shell = ensure_shell(frm);
+	const trip_master = frm.doc.custom_trip_master;
 
-	shell.html(build_itinerary_section(itinerary));
-	bind_toggle(shell);
-	bind_checkin(shell, frm);
+	fetch_trip_itinerary(trip_master).then((meta) => {
+		const itinerary = get_itinerary_data(frm, meta);
+		if (!itinerary.length && !meta) {
+			return;
+		}
+
+		const shell = ensure_shell(frm);
+		shell.html(build_itinerary_section(itinerary, meta));
+		bind_toggle(shell);
+		bind_checkin(shell, frm);
+	});
 }
 
-function has_itinerary(frm) {
-	return Array.isArray(frm.doc.itinerary) && frm.doc.itinerary.length;
+function fetch_trip_itinerary(trip_master) {
+	if (!trip_master) {
+		return Promise.resolve(null);
+	}
+
+	return new Promise((resolve) => {
+		frappe.call({
+			method: 'akfa_accounting.api.get_trip_itinerary',
+			args: { trip_master },
+			callback: (r) => resolve(r.message || null),
+			error: () => resolve(null)
+		});
+	});
+}
+
+function get_itinerary_data(frm, meta) {
+	if (meta && Array.isArray(meta.itinerary) && meta.itinerary.length) {
+		return meta.itinerary;
+	}
+
+	if (Array.isArray(frm.doc.itinerary) && frm.doc.itinerary.length) {
+		return frm.doc.itinerary;
+	}
+
+	return [];
 }
 
 function ensure_shell(frm) {
-	const wrapper = frm.fields_dict.itinerary?.$wrapper;
+	const wrapper = frm.fields_dict.custom_trip_summary_html?.$wrapper
+		|| frm.fields_dict.custom_trip_master?.$wrapper
+		|| frm.fields_dict.itinerary?.$wrapper;
 	const existing = wrapper?.parent().find('.akfa-itinerary-shell');
 
 	if (existing && existing.length) {
@@ -31,14 +59,19 @@ function ensure_shell(frm) {
 	}
 
 	const shell = $('<div class="form-section akfa-itinerary-shell"></div>');
-	wrapper.before(shell);
+	if (wrapper?.length) {
+		wrapper.before(shell);
+	} else {
+		frm.layout.wrapper.prepend(shell);
+	}
 	return shell;
 }
 
-function build_itinerary_section(itinerary) {
+function build_itinerary_section(itinerary, meta) {
 	const route = build_route_string(itinerary);
-	const days = calculate_trip_days(itinerary);
+	const days = calculate_trip_days(itinerary, meta);
 	const timeline = build_timeline(itinerary);
+	const date_range = build_date_range(meta);
 
 	return `
 		<div class="akfa-card">
@@ -46,6 +79,7 @@ function build_itinerary_section(itinerary) {
 				<div class="akfa-title">✈️ Travel Itinerary</div>
 				<div class="akfa-pill">${days} Day${days !== 1 ? 's' : ''}</div>
 			</div>
+			${date_range ? `<div class="akfa-dates">${date_range}</div>` : ''}
 			<div class="akfa-route">${route}</div>
 			<button class="btn btn-xs akfa-toggle">📋 View Details</button>
 		</div>
@@ -58,24 +92,52 @@ function build_itinerary_section(itinerary) {
 }
 
 function build_route_string(itinerary) {
-	return itinerary.map(stop => stop.destination || 'N/A').join(' → ');
+	return itinerary.map((stop) => build_leg_label(stop)).join(' → ');
 }
 
-function calculate_trip_days(itinerary) {
+function build_leg_label(stop) {
+	const from_city = stop.from_city || stop.travel_from || stop.destination;
+	const to_city = stop.to_city || stop.travel_to;
+
+	if (from_city && to_city) {
+		return `${from_city} → ${to_city}`;
+	}
+	return from_city || to_city || 'N/A';
+}
+
+function calculate_trip_days(itinerary, meta) {
 	if (!itinerary.length) {
-		return 0;
+		return meta ? calculate_days_from_dates(meta) : 0;
 	}
 
 	const first = itinerary[0];
 	const last = itinerary[itinerary.length - 1];
 
-	if (!first.departure_datetime || !last.arrival_datetime) {
-		return 0;
+	if (first.departure_datetime && last.arrival_datetime) {
+		const start = frappe.datetime.str_to_obj(first.departure_datetime);
+		const end = frappe.datetime.str_to_obj(last.arrival_datetime);
+		return frappe.datetime.get_day_diff(end, start) + 1;
 	}
 
-	const start = frappe.datetime.str_to_obj(first.departure_datetime);
-	const end = frappe.datetime.str_to_obj(last.arrival_datetime);
+	return meta ? calculate_days_from_dates(meta) : 0;
+}
+
+function calculate_days_from_dates(meta) {
+	if (!meta?.from_date || !meta?.to_date) {
+		return 0;
+	}
+	const start = frappe.datetime.str_to_obj(meta.from_date);
+	const end = frappe.datetime.str_to_obj(meta.to_date);
 	return frappe.datetime.get_day_diff(end, start) + 1;
+}
+
+function build_date_range(meta) {
+	if (!meta?.from_date || !meta?.to_date) {
+		return '';
+	}
+	const from_date = frappe.datetime.str_to_user(meta.from_date);
+	const to_date = frappe.datetime.str_to_user(meta.to_date);
+	return `${from_date} → ${to_date}`;
 }
 
 function build_timeline(itinerary) {
@@ -95,7 +157,7 @@ function render_stop(stop, idx, total) {
 		<div class="akfa-stop">
 			<div class="akfa-stop-icon">${icon}</div>
 			<div class="akfa-stop-body">
-				<div class="akfa-stop-title">${stop.destination || 'Unknown Destination'}</div>
+				<div class="akfa-stop-title">${build_leg_label(stop) || 'Unknown Destination'}</div>
 				<div class="akfa-stop-meta">
 					<div><span>Departure:</span><strong>${departure}</strong></div>
 					<div><span>Arrival:</span><strong>${arrival}</strong></div>
@@ -175,6 +237,7 @@ function ensure_styles() {
 .akfa-title{font-size:18px;font-weight:600;}\
 .akfa-pill{background:rgba(255,255,255,0.18);padding:6px 12px;border-radius:12px;font-size:12px;}\
 .akfa-route{background:rgba(255,255,255,0.16);padding:12px 14px;border-radius:10px;margin-bottom:12px;font-weight:600;}\
+.akfa-dates{font-size:12px;opacity:0.9;margin-bottom:8px;}\
 .akfa-toggle{background:rgba(255,255,255,0.22);color:#fff;border:none;border-radius:12px;}\
 .akfa-details{border:1px solid #667eea;border-radius:12px;padding:14px;margin-bottom:10px;background:#fff;box-shadow:0 6px 12px rgba(0,0,0,0.06);}\
 .akfa-stop{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid #eee;}\

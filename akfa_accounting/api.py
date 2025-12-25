@@ -40,6 +40,34 @@ def get_trip_path(trip_master):
 
 
 @frappe.whitelist()
+def get_trip_itinerary(trip_master):
+	"""Return Trip Master itinerary for Travel Request view"""
+	if not trip_master:
+		return {}
+
+	if not frappe.has_permission("Trip Master", "read", trip_master):
+		frappe.throw("Not permitted", frappe.PermissionError)
+
+	trip = frappe.get_doc("Trip Master", trip_master)
+	itinerary = []
+	for row in trip.itinerary:
+		itinerary.append({
+			"from_city": row.from_city,
+			"to_city": row.to_city,
+			"departure_datetime": row.departure_datetime,
+			"arrival_datetime": row.arrival_datetime,
+		})
+
+	return {
+		"title": trip.title,
+		"status": trip.status,
+		"from_date": trip.from_date,
+		"to_date": trip.to_date,
+		"itinerary": itinerary,
+	}
+
+
+@frappe.whitelist()
 def create_expense_claim_mobile(trip_master, employee, expense_type, amount, expense_date, description=None, attachment_url=None):
 	"""Whitelisted wrapper for simplified mobile expense claim creation."""
 	return create_expense_claim_mobile_service(

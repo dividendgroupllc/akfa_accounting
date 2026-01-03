@@ -11,6 +11,8 @@ doctype_js = {
 	"Expense Claim": "public/js/expense_claim.js",
 }
 
+app_include_js = ["/assets/akfa_accounting/js/pwa_init.js"]
+
 fixtures = [
 	{
 		"dt": "Custom Field",

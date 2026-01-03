@@ -1,0 +1,5 @@
+{
+	"js/pwa_init.bundle.js": [
+		"public/js/pwa_init.js"
+	]
+}

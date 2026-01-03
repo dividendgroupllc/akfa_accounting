@@ -2,7 +2,7 @@
 // Auto-fill employee, company, and currency from Trip Master
 
 frappe.ui.form.on('Expense Claim', {
-	setup: function(frm) {
+	setup: function (frm) {
 		// Auto-fill employee on new document
 		if (frm.is_new()) {
 			frappe.call({
@@ -12,7 +12,7 @@ frappe.ui.form.on('Expense Claim', {
 					filters: { user_id: frappe.session.user },
 					fieldname: ['name', 'employee_name', 'company']
 				},
-				callback: function(r) {
+				callback: function (r) {
 					if (r.message) {
 						frm.set_value('employee', r.message.name);
 						frm.set_value('employee_name', r.message.employee_name);
@@ -23,10 +23,10 @@ frappe.ui.form.on('Expense Claim', {
 		}
 	},
 
-	onload: function(frm) {
+	onload: function (frm) {
 		// Set currency from Trip Master or Company
 		if (frm.is_new() && !frm.doc.custom_currency) {
-			setTimeout(function() {
+			setTimeout(function () {
 				if (frm.doc.custom_trip_master) {
 					// If Trip Master is set, fetch its currency
 					frappe.call({
@@ -36,7 +36,7 @@ frappe.ui.form.on('Expense Claim', {
 							name: frm.doc.custom_trip_master,
 							fieldname: 'currency'
 						},
-						callback: function(r) {
+						callback: function (r) {
 							if (r.message && r.message.currency) {
 								frm.set_value('custom_currency', r.message.currency);
 							}
@@ -51,7 +51,7 @@ frappe.ui.form.on('Expense Claim', {
 							name: frm.doc.company,
 							fieldname: 'default_currency'
 						},
-						callback: function(r) {
+						callback: function (r) {
 							if (r.message && r.message.default_currency) {
 								frm.set_value('custom_currency', r.message.default_currency);
 							}
@@ -62,7 +62,17 @@ frappe.ui.form.on('Expense Claim', {
 		}
 	},
 
-	refresh: function(frm) {
+	refresh: function (frm) {
+		// Role-based visibility for approval_status
+		var is_approver = frappe.user_roles.includes('Expense Approver') ||
+			frappe.user_roles.includes('HR Manager') ||
+			frappe.user_roles.includes('System Manager') ||
+			frappe.user_roles.includes('Administrator');
+
+		// Show approval_status only for approvers
+		frm.set_df_property('approval_status', 'hidden', !is_approver);
+		frm.set_df_property('approval_status', 'read_only', frm.doc.docstatus === 1); // Read only after submit
+
 		// Show employee info in a nice way if hidden
 		if (frm.doc.employee_name && frm.doc.docstatus === 0) {
 			frm.dashboard.add_indicator(
@@ -80,14 +90,14 @@ frappe.ui.form.on('Expense Claim', {
 
 			// Add View Budget button for trip members
 			if (frm.doc.docstatus < 2) {
-				frm.add_custom_button(__('Byudjet'), function() {
+				frm.add_custom_button(__('Byudjet'), function () {
 					frappe.set_route('trip-monitoring', frm.doc.custom_trip_master, 'budget');
 				}, __('Ko\'rish'));
 			}
 		}
 	},
 
-	custom_trip_master: function(frm) {
+	custom_trip_master: function (frm) {
 		// When Trip Master is set, fetch and apply its currency
 		if (frm.doc.custom_trip_master) {
 			frappe.call({
@@ -97,14 +107,14 @@ frappe.ui.form.on('Expense Claim', {
 					name: frm.doc.custom_trip_master,
 					fieldname: ['currency', 'title']
 				},
-				callback: function(r) {
+				callback: function (r) {
 					if (r.message && r.message.currency) {
 						// Set parent currency field
 						frm.set_value('custom_currency', r.message.currency);
 
 						// Update existing rows
 						if (frm.doc.expenses && frm.doc.expenses.length > 0) {
-							frm.doc.expenses.forEach(function(row) {
+							frm.doc.expenses.forEach(function (row) {
 								frappe.model.set_value(row.doctype, row.name, 'custom_currency', r.message.currency);
 							});
 						}
@@ -119,10 +129,10 @@ frappe.ui.form.on('Expense Claim', {
 		}
 	},
 
-	custom_currency: function(frm) {
+	custom_currency: function (frm) {
 		// When currency changes, update all child table rows
 		if (frm.doc.custom_currency && frm.doc.expenses) {
-			frm.doc.expenses.forEach(function(row) {
+			frm.doc.expenses.forEach(function (row) {
 				frappe.model.set_value(row.doctype, row.name, 'custom_currency', frm.doc.custom_currency);
 			});
 			frm.refresh_field('expenses');
@@ -132,7 +142,7 @@ frappe.ui.form.on('Expense Claim', {
 
 // Handle Expense Claim Detail
 frappe.ui.form.on('Expense Claim Detail', {
-	expenses_add: function(frm, cdt, cdn) {
+	expenses_add: function (frm, cdt, cdn) {
 		// Set default expense date to today
 		frappe.model.set_value(cdt, cdn, 'expense_date', frappe.datetime.get_today());
 
@@ -142,7 +152,7 @@ frappe.ui.form.on('Expense Claim Detail', {
 		}
 	},
 
-	expense_type: function(frm, cdt, cdn) {
+	expense_type: function (frm, cdt, cdn) {
 		// Override default behavior to include company parameter
 		var row = locals[cdt][cdn];
 		if (row.expense_type && frm.doc.company) {
@@ -152,7 +162,7 @@ frappe.ui.form.on('Expense Claim Detail', {
 					expense_claim_type: row.expense_type,
 					company: frm.doc.company
 				},
-				callback: function(r) {
+				callback: function (r) {
 					if (r.message) {
 						frappe.model.set_value(cdt, cdn, "default_account", r.message.account);
 						frappe.model.set_value(cdt, cdn, "cost_center", r.message.cost_center);

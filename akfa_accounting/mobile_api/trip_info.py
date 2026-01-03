@@ -2,17 +2,26 @@ import frappe
 from frappe import _
 
 
-def get_active_trip(employee):
+@frappe.whitelist()
+def get_active_trip(employee=None):
 	try:
+		# Auto-detect employee from session if not provided
+		if not employee:
+			user = frappe.session.user
+			employee = frappe.db.get_value("Employee", {"user_id": user}, "name")
+			if not employee:
+				return {"success": False, "trip": None, "employee": None, "message": _("No employee linked to user")}
+		
 		trip = _find_active_trip(employee)
 		return {
 			"success": True,
 			"trip": trip,
-			"message": _("No active trip found for employee") if not trip else None,
+			"employee": employee,
+			"message": _("Hozirda aktiv safaringiz yo'q") if not trip else None,
 		}
 	except Exception as err:
 		frappe.log_error(f"Error getting active trip: {err}", "Mobile API Error")
-		frappe.throw(_("Failed to get active trip: {0}").format(err))
+		return {"success": False, "trip": None, "employee": None, "message": str(err)}
 
 
 def get_trip_balance(trip_id):

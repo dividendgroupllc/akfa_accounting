@@ -3,6 +3,17 @@ from frappe import _
 from frappe.utils import nowdate
 
 
+@frappe.whitelist()
+def create_expense_from_mobile(trip_master, expense_type, amount, description=None, receipt_url=None):
+	"""API for mobile app to create expense claim"""
+	try:
+		employee = _get_session_employee()
+		return create_expense_claim_mobile(trip_master, employee, expense_type, float(amount), nowdate(), description, receipt_url)
+	except Exception as err:
+		frappe.log_error(f"Mobile expense error: {err}", "Mobile API Error")
+		frappe.throw(str(err))
+
+
 def create_expense_claim_mobile(trip_master, employee, expense_type, amount, expense_date, description=None, attachment_url=None):
 	try:
 		session_employee = _get_session_employee()
@@ -93,6 +104,7 @@ def _new_claim(trip, employee_doc):
 	claim.posting_date = nowdate()
 	claim.custom_trip_master = trip.name
 	claim.project = trip.project
+	claim.approval_status = "Approved"  # Auto-approve so admin can submit
 	return claim
 
 
@@ -106,7 +118,6 @@ def _set_company_defaults(claim, company):
 
 
 def _add_expense_row(claim, expense_type, amount, expense_date, description):
-	default_account = frappe.db.get_value("Expense Claim Type", expense_type, "accounts")
 	claim.append(
 		"expenses",
 		{
@@ -115,7 +126,6 @@ def _add_expense_row(claim, expense_type, amount, expense_date, description):
 			"amount": float(amount),
 			"sanctioned_amount": float(amount),
 			"description": description or f"Expense from mobile app - {expense_type}",
-			"default_account": default_account,
 		},
 	)
 

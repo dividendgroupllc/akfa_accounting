@@ -8,4 +8,4 @@ def redirect_employee(login_manager=None):
 
 	roles = set(frappe.get_roles(user))
 	if "Employee" in roles and "System Manager" not in roles:
-		frappe.local.response["redirect_to"] = "/app/akfa-hr"
+		frappe.local.response["redirect_to"] = "/app/mobile-hr"

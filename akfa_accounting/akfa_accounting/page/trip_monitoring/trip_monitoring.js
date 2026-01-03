@@ -1,4 +1,4 @@
-frappe.pages['trip-monitoring'].on_page_load = function(wrapper) {
+frappe.pages['trip-monitoring'].on_page_load = function (wrapper) {
 	const page = frappe.ui.make_app_page({
 		parent: wrapper,
 		title: 'Trip Monitoring',
@@ -8,7 +8,18 @@ frappe.pages['trip-monitoring'].on_page_load = function(wrapper) {
 	page.main.html(frappe.render_template('trip_monitoring'));
 	add_styles();
 
-	new TripMonitoringDashboard(page);
+	page.dashboard = new TripMonitoringDashboard(page);
+};
+
+frappe.pages['trip-monitoring'].on_page_show = function (wrapper) {
+	// Reload data when navigating back to this page
+	if (wrapper && wrapper.page && wrapper.page.dashboard) {
+		const trip_id = frappe.get_route()[1];
+		if (trip_id && trip_id !== wrapper.page.dashboard.trip_id) {
+			wrapper.page.dashboard.trip_id = trip_id;
+			wrapper.page.dashboard.load_trip_data();
+		}
+	}
 };
 
 class TripMonitoringDashboard {
@@ -163,7 +174,7 @@ class TripMonitoringDashboard {
 	render_budget(data) {
 		const currency = data.currency === 'UZS' ? "so'm" : data.currency;
 		const utilization_color = data.utilization_percent < 70 ? '#10b981' :
-								  data.utilization_percent < 90 ? '#f59e0b' : '#ef4444';
+			data.utilization_percent < 90 ? '#f59e0b' : '#ef4444';
 
 		this.wrapper.find('.budget-content').html(`
 			<div class="budget-item budget-total">

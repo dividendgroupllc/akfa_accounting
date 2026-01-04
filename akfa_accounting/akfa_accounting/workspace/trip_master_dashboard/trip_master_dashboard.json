@@ -1,172 +1,216 @@
 {
- "charts": [
-  {
-   "chart_name": "Fleet Status",
-   "label": "Fleet Status"
-  },
-  {
-   "chart_name": "Budget Utilization",
-   "label": "Budget Utilization"
-  }
- ],
- "content": "[{\"id\":\"wXnY2DqhcK\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Trip Master Dashboard</span>\",\"col\":12}},{\"id\":\"ySLQNGb_Dk\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Trip Master\",\"col\":3}},{\"id\":\"g4wfq-YcGK\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Vehicle\",\"col\":3}},{\"id\":\"mP7TdPmJPR\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Employee\",\"col\":3}},{\"id\":\"Fks0uVP0N5\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Project\",\"col\":3}},{\"id\":\"_DG6GIqYPj\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"fleet_status_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Active Trips Count\",\"col\":4}},{\"id\":\"budget_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Total Budget\",\"col\":4}},{\"id\":\"employees_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Employees On Trip\",\"col\":4}},{\"id\":\"_5ZBLw57Ey\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"_chart1\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Fleet Status\",\"col\":6}},{\"id\":\"_chart2\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Budget Utilization\",\"col\":6}}]",
- "creation": "2025-01-23 18:00:00",
- "custom_blocks": [],
- "docstatus": 0,
- "doctype": "Workspace",
- "for_user": "",
- "hide_custom": 0,
- "icon": "dashboard",
- "idx": 0,
- "is_hidden": 0,
- "label": "Trip Master Dashboard",
- "links": [
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Trip Management",
-   "link_count": 0,
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "dependencies": "",
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Trip Master",
-   "link_count": 0,
-   "link_to": "Trip Master",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "dependencies": "",
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Live Monitoring",
-   "link_count": 0,
-   "link_to": "trip-monitoring",
-   "link_type": "Page",
-   "onboard": 1,
-   "type": "Link"
-  },
-  {
-   "dependencies": "",
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Trip Path Log",
-   "link_count": 0,
-   "link_to": "Trip Path Log",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Fleet & Finance",
-   "link_count": 0,
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "dependencies": "",
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Vehicle",
-   "link_count": 0,
-   "link_to": "Vehicle",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "dependencies": "",
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Project",
-   "link_count": 0,
-   "link_to": "Project",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "dependencies": "",
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Employee Advance",
-   "link_count": 0,
-   "link_to": "Employee Advance",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "dependencies": "",
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Expense Claim",
-   "link_count": 0,
-   "link_to": "Expense Claim",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  }
- ],
- "modified": "2025-01-23 18:00:00",
- "modified_by": "Administrator",
- "module": "akfa_accounting",
- "name": "Trip Master Dashboard",
- "owner": "Administrator",
- "parent_page": "",
- "public": 1,
- "quick_lists": [],
- "roles": [
-  {
-   "role": "System Manager"
-  },
-  {
-   "role": "HR Manager"
-  }
- ],
- "sequence_id": 20,
- "shortcuts": [
-  {
-   "color": "Blue",
-   "doc_view": "List",
-   "label": "Trip Master",
-   "link_to": "Trip Master",
-   "type": "DocType"
-  },
-  {
-   "color": "Red",
-   "label": "Live Monitoring",
-   "link_to": "trip-monitoring",
-   "type": "Page"
-  },
-  {
-   "color": "Green",
-   "doc_view": "List",
-   "label": "Vehicle",
-   "link_to": "Vehicle",
-   "type": "DocType"
-  },
-  {
-   "color": "Orange",
-   "doc_view": "List",
-   "label": "Employee",
-   "link_to": "Employee",
-   "type": "DocType"
-  },
-  {
-   "color": "Purple",
-   "doc_view": "List",
-   "label": "Project",
-   "link_to": "Project",
-   "type": "DocType"
-  }
- ],
- "title": "Trip Master Dashboard"
+    "charts": [
+        {
+            "chart_name": "Fleet Status",
+            "label": "Fleet Status"
+        },
+        {
+            "chart_name": "Budget Utilization",
+            "label": "Budget Utilization"
+        }
+    ],
+    "content": "[{\"id\":\"wXnY2DqhcK\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Trip Master Dashboard</span>\",\"col\":12}},{\"id\":\"ySLQNGb_Dk\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Trip Master\",\"col\":3}},{\"id\":\"monitoring_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Live Monitoring\",\"col\":3}},{\"id\":\"travel_request_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Travel Request\",\"col\":3}},{\"id\":\"expense_claim_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Expense Claim\",\"col\":3}},{\"id\":\"vehicle_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Vehicle\",\"col\":3}},{\"id\":\"employee_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Employee\",\"col\":3}},{\"id\":\"project_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Project\",\"col\":3}},{\"id\":\"_DG6GIqYPj\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"fleet_status_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Active Trips Count\",\"col\":4}},{\"id\":\"budget_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Total Budget\",\"col\":4}},{\"id\":\"employees_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Employees On Trip\",\"col\":4}},{\"id\":\"_5ZBLw57Ey\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"_chart1\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Fleet Status\",\"col\":6}},{\"id\":\"_chart2\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Budget Utilization\",\"col\":6}}]",
+    "creation": "2025-01-23 18:00:00",
+    "custom_blocks": [],
+    "docstatus": 0,
+    "doctype": "Workspace",
+    "for_user": "",
+    "hide_custom": 0,
+    "icon": "dashboard",
+    "idx": 0,
+    "is_hidden": 0,
+    "label": "Trip Master Dashboard",
+    "links": [
+        {
+            "hidden": 0,
+            "is_query_report": 0,
+            "label": "Trip Management",
+            "link_count": 0,
+            "onboard": 0,
+            "type": "Card Break"
+        },
+        {
+            "dependencies": "",
+            "hidden": 0,
+            "is_query_report": 0,
+            "label": "Trip Master",
+            "link_count": 0,
+            "link_to": "Trip Master",
+            "link_type": "DocType",
+            "onboard": 0,
+            "type": "Link"
+        },
+        {
+            "dependencies": "",
+            "hidden": 0,
+            "is_query_report": 0,
+            "label": "Live Monitoring",
+            "link_count": 0,
+            "link_to": "trip-monitoring",
+            "link_type": "Page",
+            "onboard": 1,
+            "type": "Link"
+        },
+        {
+            "dependencies": "",
+            "hidden": 0,
+            "is_query_report": 0,
+            "label": "Trip Path Log",
+            "link_count": 0,
+            "link_to": "Trip Path Log",
+            "link_type": "DocType",
+            "onboard": 0,
+            "type": "Link"
+        },
+        {
+            "hidden": 0,
+            "is_query_report": 0,
+            "label": "HR & Finance",
+            "link_count": 0,
+            "onboard": 0,
+            "type": "Card Break"
+        },
+        {
+            "dependencies": "",
+            "hidden": 0,
+            "is_query_report": 0,
+            "label": "Travel Request",
+            "link_count": 0,
+            "link_to": "Travel Request",
+            "link_type": "DocType",
+            "onboard": 0,
+            "type": "Link"
+        },
+        {
+            "dependencies": "",
+            "hidden": 0,
+            "is_query_report": 0,
+            "label": "Expense Claim",
+            "link_count": 0,
+            "link_to": "Expense Claim",
+            "link_type": "DocType",
+            "onboard": 0,
+            "type": "Link"
+        },
+        {
+            "dependencies": "",
+            "hidden": 0,
+            "is_query_report": 0,
+            "label": "Employee Advance",
+            "link_count": 0,
+            "link_to": "Employee Advance",
+            "link_type": "DocType",
+            "onboard": 0,
+            "type": "Link"
+        },
+        {
+            "hidden": 0,
+            "is_query_report": 0,
+            "label": "Fleet & Resources",
+            "link_count": 0,
+            "onboard": 0,
+            "type": "Card Break"
+        },
+        {
+            "dependencies": "",
+            "hidden": 0,
+            "is_query_report": 0,
+            "label": "Vehicle",
+            "link_count": 0,
+            "link_to": "Vehicle",
+            "link_type": "DocType",
+            "onboard": 0,
+            "type": "Link"
+        },
+        {
+            "dependencies": "",
+            "hidden": 0,
+            "is_query_report": 0,
+            "label": "Project",
+            "link_count": 0,
+            "link_to": "Project",
+            "link_type": "DocType",
+            "onboard": 0,
+            "type": "Link"
+        },
+        {
+            "dependencies": "",
+            "hidden": 0,
+            "is_query_report": 0,
+            "label": "Employee",
+            "link_count": 0,
+            "link_to": "Employee",
+            "link_type": "DocType",
+            "onboard": 0,
+            "type": "Link"
+        }
+    ],
+    "modified": "2026-01-04 10:00:00",
+    "modified_by": "Administrator",
+    "module": "akfa_accounting",
+    "name": "Trip Master Dashboard",
+    "owner": "Administrator",
+    "parent_page": "",
+    "public": 1,
+    "quick_lists": [],
+    "roles": [
+        {
+            "role": "System Manager"
+        },
+        {
+            "role": "HR Manager"
+        }
+    ],
+    "sequence_id": 20,
+    "shortcuts": [
+        {
+            "color": "Blue",
+            "doc_view": "List",
+            "label": "Trip Master",
+            "link_to": "Trip Master",
+            "type": "DocType"
+        },
+        {
+            "color": "Red",
+            "label": "Live Monitoring",
+            "link_to": "trip-monitoring",
+            "type": "Page"
+        },
+        {
+            "color": "Green",
+            "doc_view": "List",
+            "label": "Travel Request",
+            "link_to": "Travel Request",
+            "type": "DocType"
+        },
+        {
+            "color": "Orange",
+            "doc_view": "List",
+            "label": "Expense Claim",
+            "link_to": "Expense Claim",
+            "type": "DocType"
+        },
+        {
+            "color": "Yellow",
+            "doc_view": "List",
+            "label": "Vehicle",
+            "link_to": "Vehicle",
+            "type": "DocType"
+        },
+        {
+            "color": "Purple",
+            "doc_view": "List",
+            "label": "Employee",
+            "link_to": "Employee",
+            "type": "DocType"
+        },
+        {
+            "color": "Cyan",
+            "doc_view": "List",
+            "label": "Project",
+            "link_to": "Project",
+            "type": "DocType"
+        }
+    ],
+    "title": "Trip Master Dashboard"
 }

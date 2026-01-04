@@ -1,6 +1,6 @@
 import frappe
 from frappe import _
-from frappe.utils import nowdate
+from frappe.utils import nowdate, flt
 
 
 @frappe.whitelist()
@@ -91,8 +91,14 @@ def _build_expense_claim(trip, employee_doc, expense_type, amount, expense_date,
 	claim = _new_claim(trip, employee_doc)
 	_set_company_defaults(claim, employee_doc.company)
 	_add_expense_row(claim, expense_type, amount, expense_date, description)
+	
+	# Link to Employee Advance if exists for this trip
+	_link_employee_advance(claim, trip.name, employee_doc.name, amount)
+	
 	claim.flags.ignore_permissions = True
 	claim.insert()
+	# Auto-submit for streamlined workflow
+	claim.submit()
 	return claim
 
 
@@ -118,6 +124,11 @@ def _set_company_defaults(claim, company):
 
 
 def _add_expense_row(claim, expense_type, amount, expense_date, description):
+	# Get cost center from claim or company default
+	cost_center = claim.cost_center
+	if not cost_center and claim.company:
+		cost_center = frappe.db.get_value("Company", claim.company, "cost_center")
+	
 	claim.append(
 		"expenses",
 		{
@@ -126,6 +137,57 @@ def _add_expense_row(claim, expense_type, amount, expense_date, description):
 			"amount": float(amount),
 			"sanctioned_amount": float(amount),
 			"description": description or f"Expense from mobile app - {expense_type}",
+			"cost_center": cost_center,
+		},
+	)
+
+
+def _link_employee_advance(claim, trip_master, employee, amount):
+	"""Link expense claim to employee advance for this trip"""
+	# Find submitted employee advance for this trip and employee
+	advance = frappe.db.get_value(
+		"Employee Advance",
+		{
+			"custom_trip_master": trip_master,
+			"employee": employee,
+			"docstatus": 1,
+		},
+		["name", "advance_amount", "paid_amount", "claimed_amount", "status"],
+		as_dict=True
+	)
+	
+	if not advance:
+		# No advance found, expense will be "Unpaid" - reimbursement workflow
+		return
+	
+	# Get advance document
+	advance_doc = frappe.get_doc("Employee Advance", advance.name)
+	
+	# Calculate unclaimed based on whether advance is paid or not
+	# If advance is "Paid" - use paid_amount, otherwise use advance_amount (pending payment)
+	if advance.status == "Paid":
+		available = flt(advance.paid_amount) - flt(advance.claimed_amount)
+	else:
+		# Advance approved but not yet paid - still allocate from advance_amount
+		available = flt(advance.advance_amount) - flt(advance.claimed_amount)
+	
+	if available <= 0:
+		# Advance fully used, expense will be "Unpaid"
+		return
+	
+	# Allocate from advance (up to expense amount or available amount)
+	allocated = min(flt(amount), available)
+	
+	# Add to advances child table
+	claim.append(
+		"advances",
+		{
+			"employee_advance": advance.name,
+			"posting_date": advance_doc.posting_date,
+			"advance_paid": flt(advance.paid_amount) if advance.status == "Paid" else flt(advance.advance_amount),
+			"unclaimed_amount": available,
+			"allocated_amount": allocated,
+			"advance_account": advance_doc.advance_account,
 		},
 	)
 
@@ -152,11 +214,14 @@ def _attach_file(claim, attachment_url):
 
 
 def _success_payload(claim):
+	# Reload to get updated status
+	claim.reload()
 	return {
 		"success": True,
-		"message": _("Expense Claim created successfully"),
+		"message": _("Expense Claim submitted successfully"),
 		"expense_claim_id": claim.name,
 		"expense_claim_url": frappe.utils.get_url_to_form("Expense Claim", claim.name),
 		"total_amount": claim.total_claimed_amount,
 		"status": claim.status,
+		"advance_used": flt(claim.total_advance_amount) > 0,
 	}

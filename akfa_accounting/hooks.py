@@ -46,6 +46,9 @@ has_permission = {
 doc_events = {
 	"Expense Claim": {
 		"validate": "akfa_accounting.validations.expense_claim.validate_trip_membership",
+	},
+	"Employee Advance": {
+		"on_submit": "akfa_accounting.events.employee_advance.auto_create_payment_entry",
 	}
 }
 

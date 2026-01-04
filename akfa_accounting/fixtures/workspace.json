@@ -1,79 +1,5 @@
 [
  {
-  "charts": [],
-  "content": "[{\"id\":\"hdr_akfa_hr\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Akfa HR</span>\",\"col\":12}},{\"id\":\"shortcut_travel_request\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Travel Request\",\"col\":3}},{\"id\":\"shortcut_expense_claim\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Expense Claim\",\"col\":3}}]",
-  "custom_blocks": [],
-  "docstatus": 0,
-  "doctype": "Workspace",
-  "for_user": "",
-  "hide_custom": 0,
-  "icon": "user",
-  "indicator_color": null,
-  "is_hidden": 0,
-  "label": "Akfa HR",
-  "links": [],
-  "modified": "2025-12-24 14:00:00",
-  "module": "akfa_accounting",
-  "name": "Akfa HR",
-  "number_cards": [],
-  "parent_page": "",
-  "public": 1,
-  "quick_lists": [],
-  "restrict_to_domain": null,
-  "roles": [
-   {
-    "parent": "Akfa HR",
-    "parentfield": "roles",
-    "parenttype": "Workspace",
-    "role": "Employee"
-   },
-   {
-    "parent": "Akfa HR",
-    "parentfield": "roles",
-    "parenttype": "Workspace",
-    "role": "System Manager"
-   }
-  ],
-  "sequence_id": 25.0,
-  "shortcuts": [
-   {
-    "color": "Green",
-    "doc_view": "List",
-    "format": null,
-    "icon": null,
-    "kanban_board": null,
-    "label": "Travel Request",
-    "link_to": "Travel Request",
-    "parent": "Akfa HR",
-    "parentfield": "shortcuts",
-    "parenttype": "Workspace",
-    "report_ref_doctype": null,
-    "restrict_to_domain": null,
-    "stats_filter": null,
-    "type": "DocType",
-    "url": null
-   },
-   {
-    "color": "Orange",
-    "doc_view": "List",
-    "format": null,
-    "icon": null,
-    "kanban_board": null,
-    "label": "Expense Claim",
-    "link_to": "Expense Claim",
-    "parent": "Akfa HR",
-    "parentfield": "shortcuts",
-    "parenttype": "Workspace",
-    "report_ref_doctype": null,
-    "restrict_to_domain": null,
-    "stats_filter": null,
-    "type": "DocType",
-    "url": null
-   }
-  ],
-  "title": "Akfa HR"
- },
- {
   "charts": [
    {
     "chart_name": "Fleet Status",
@@ -90,7 +16,7 @@
     "parenttype": "Workspace"
    }
   ],
-  "content": "[{\"id\":\"wXnY2DqhcK\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Trip Master Dashboard</span>\",\"col\":12}},{\"id\":\"ySLQNGb_Dk\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Trip Master\",\"col\":3}},{\"id\":\"g4wfq-YcGK\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Vehicle\",\"col\":3}},{\"id\":\"mP7TdPmJPR\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Employee\",\"col\":3}},{\"id\":\"Fks0uVP0N5\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Project\",\"col\":3}},{\"id\":\"_DG6GIqYPj\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"fleet_status_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Active Trips Count\",\"col\":4}},{\"id\":\"budget_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Total Budget\",\"col\":4}},{\"id\":\"employees_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Employees On Trip\",\"col\":4}},{\"id\":\"_5ZBLw57Ey\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"_chart1\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Fleet Status\",\"col\":6}},{\"id\":\"_chart2\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Budget Utilization\",\"col\":6}}]",
+  "content": "[{\"id\":\"wXnY2DqhcK\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Trip Master Dashboard</span>\",\"col\":12}},{\"id\":\"ySLQNGb_Dk\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Trip Master\",\"col\":3}},{\"id\":\"g4wfq-YcGK\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Vehicle\",\"col\":3}},{\"id\":\"mP7TdPmJPR\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Employee\",\"col\":3}},{\"id\":\"Fks0uVP0N5\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Project\",\"col\":3}},{\"id\":\"shortcut_expense\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Expense Claim\",\"col\":3}},{\"id\":\"shortcut_travel\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Travel Request\",\"col\":3}},{\"id\":\"shortcut_monitoring\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Trip Monitoring\",\"col\":3}},{\"id\":\"_DG6GIqYPj\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"fleet_status_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Active Trips Count\",\"col\":4}},{\"id\":\"budget_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Total Budget\",\"col\":4}},{\"id\":\"employees_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Employees On Trip\",\"col\":4}},{\"id\":\"_5ZBLw57Ey\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"_chart1\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Fleet Status\",\"col\":6}},{\"id\":\"_chart2\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Budget Utilization\",\"col\":6}}]",
   "custom_blocks": [],
   "docstatus": 0,
   "doctype": "Workspace",
@@ -329,6 +255,57 @@
     "kanban_board": null,
     "label": "Project",
     "link_to": "Project",
+    "parent": "Trip Master Dashboard",
+    "parentfield": "shortcuts",
+    "parenttype": "Workspace",
+    "report_ref_doctype": null,
+    "restrict_to_domain": null,
+    "stats_filter": null,
+    "type": "DocType",
+    "url": null
+   },
+   {
+    "color": "Red",
+    "doc_view": "List",
+    "format": null,
+    "icon": null,
+    "kanban_board": null,
+    "label": "Expense Claim",
+    "link_to": "Expense Claim",
+    "parent": "Trip Master Dashboard",
+    "parentfield": "shortcuts",
+    "parenttype": "Workspace",
+    "report_ref_doctype": null,
+    "restrict_to_domain": null,
+    "stats_filter": null,
+    "type": "DocType",
+    "url": null
+   },
+   {
+    "color": "Cyan",
+    "doc_view": "List",
+    "format": null,
+    "icon": null,
+    "kanban_board": null,
+    "label": "Travel Request",
+    "link_to": "Travel Request",
+    "parent": "Trip Master Dashboard",
+    "parentfield": "shortcuts",
+    "parenttype": "Workspace",
+    "report_ref_doctype": null,
+    "restrict_to_domain": null,
+    "stats_filter": null,
+    "type": "DocType",
+    "url": null
+   },
+   {
+    "color": "Yellow",
+    "doc_view": "List",
+    "format": null,
+    "icon": null,
+    "kanban_board": null,
+    "label": "Trip Monitoring",
+    "link_to": "Trip Monitoring",
     "parent": "Trip Master Dashboard",
     "parentfield": "shortcuts",
     "parenttype": "Workspace",

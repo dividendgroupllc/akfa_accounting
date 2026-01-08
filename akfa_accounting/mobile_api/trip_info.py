@@ -29,18 +29,21 @@ def get_trip_balance(trip_id):
 		trip = _load_submitted_trip(trip_id)
 		project = _load_linked_project(trip)
 		budget = project.estimated_costing or 0
+
+		# Calculate actual spent amount (only Expense Claims)
+		# Employee Advance is prepaid funds, not actual expenses
 		spent = _calculate_spent(trip_id)
-		advances = _calculate_advances(trip_id)
-		total_spent = spent + advances
-		utilization = (total_spent / budget * 100) if budget else 0
+
+		# Calculate utilization based on actual expenses only
+		utilization = (spent / budget * 100) if budget else 0
 
 		return {
 			"success": True,
 			"trip_id": trip_id,
 			"trip_title": trip.title,
 			"budget": budget,
-			"spent": total_spent,
-			"balance": budget - total_spent,
+			"spent": spent,  # Only actual expenses (Expense Claims)
+			"balance": budget - spent,
 			"utilization_percent": round(utilization, 2),
 			"currency": trip.currency or "UZS",
 			"status": trip.status,

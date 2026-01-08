@@ -9,49 +9,30 @@ from frappe.utils import flt
 
 def auto_create_payment_entry(doc, method=None):
     """
-    Auto-create Payment Entry when Employee Advance with Trip Master is submitted.
-    This implements the workflow:
+    ❌ DISABLED: Auto-payment removed for Enterprise Approval Workflow
+
+    New workflow (Enterprise Standard):
     1. Trip Master created with budget
-    2. Employee Advance created and linked to Trip
-    3. Employee Advance Submit → Auto Payment Entry (Pay) → Money to employee
-    4. Employee creates Expense Claims → Deducted from advance
+    2. Employee Advance created and linked to Trip (Status: Unpaid)
+    3. Finance Manager reviews and approves
+    4. Finance Manager clicks "Approve & Pay" button
+    5. Payment Entry created → Money to employee (Status: Paid)
+
+    Old behavior (auto-payment) disabled for better financial control.
     """
+    # ❌ AUTO-PAYMENT DISABLED
+    # This function is kept for backward compatibility but does nothing
+    # Payment now requires manual approval via "Approve & Pay" button
+
     # Only process if linked to a Trip Master
     if not doc.custom_trip_master:
         return
-    
-    # Check if Payment Entry already exists for this advance
-    existing_pe = frappe.db.exists(
-        "Payment Entry",
-        {
-            "party_type": "Employee",
-            "party": doc.employee,
-            "docstatus": ["!=", 2],  # Not cancelled
-            "custom_employee_advance": doc.name
-        }
-    )
-    
-    if existing_pe:
-        frappe.msgprint(_("Payment Entry {0} already exists for this advance").format(existing_pe))
-        return
-    
-    try:
-        payment_entry = create_payment_entry_for_advance(doc)
-        if payment_entry:
-            frappe.msgprint(
-                _("Payment Entry {0} created and submitted automatically").format(
-                    frappe.get_desk_link("Payment Entry", payment_entry.name)
-                ),
-                alert=True,
-                indicator="green"
-            )
-    except Exception as e:
-        frappe.log_error(f"Auto Payment Entry Error: {e}", "Employee Advance")
-        frappe.msgprint(
-            _("Could not auto-create Payment Entry: {0}. Please create manually.").format(str(e)),
-            alert=True,
-            indicator="orange"
-        )
+
+    # Log that advance was created and awaits approval
+    frappe.logger().info(f"Employee Advance {doc.name} created for Trip {doc.custom_trip_master}. Awaiting Finance approval.")
+
+    # Do NOT auto-create payment - this is now handled by approval workflow
+    return
 
 
 def create_payment_entry_for_advance(advance):

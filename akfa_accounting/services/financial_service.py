@@ -74,7 +74,7 @@ class FinancialService:
         return default_cc
 
     def create_employee_advance(self, leader):
-        """Create Employee Advance for leader"""
+        """Create Employee Advance for leader (Approval Workflow - Enterprise Standard)"""
         if not self.trip.budget_amount or self.trip.budget_amount <= 0:
             return None
 
@@ -100,9 +100,9 @@ class FinancialService:
         # Set advance account from Trip Master or company default
         ea.advance_account = self.trip.advance_account or self._get_advance_account()
 
-        # Set payment account if provided
-        if self.trip.payment_account:
-            ea.mode_of_payment_account = self.trip.payment_account
+        # ❌ REMOVED: Auto-payment (now requires Finance Manager approval)
+        # if self.trip.payment_account:
+        #     ea.mode_of_payment_account = self.trip.payment_account
 
         ea.flags.ignore_permissions = True
         ea.insert()
@@ -111,14 +111,67 @@ class FinancialService:
         leader.employee_advance = ea.name
         self.created_advance = ea.name
 
+        # Notify Finance Manager for approval
+        self._notify_finance_approval(ea)
+
         frappe.msgprint(
-            _("Employee Advance {0} created for {1}").format(
+            _("Employee Advance {0} created for {1}. Finance team has been notified.").format(
                 frappe.utils.get_link_to_form("Employee Advance", ea.name),
                 leader.employee_name
             )
         )
 
         return ea.name
+
+    def _notify_finance_approval(self, advance_doc):
+        """Send notification to Finance team for Employee Advance review"""
+        # Get Finance Managers (Accounts Manager or System Manager)
+        finance_managers = frappe.get_all(
+            "Has Role",
+            filters={"role": "Accounts Manager", "parenttype": "User"},
+            fields=["parent as user"]
+        )
+
+        if not finance_managers:
+            # Fallback to System Manager if no Accounts Manager
+            finance_managers = frappe.get_all(
+                "Has Role",
+                filters={"role": "System Manager", "parenttype": "User"},
+                fields=["parent as user"]
+            )
+
+        # Always notify Administrator
+        admin_user = {"user": "Administrator"}
+        if admin_user not in finance_managers:
+            finance_managers.append(admin_user)
+
+        # Create notification for each Finance Manager
+        for manager in finance_managers:
+            notification_doc = frappe.get_doc({
+                "doctype": "Notification Log",
+                "subject": f"Employee Advance Created: {advance_doc.name}",
+                "email_content": f"""
+                    <p><strong>New Employee Advance requires payment:</strong></p>
+                    <ul>
+                        <li><strong>Employee:</strong> {advance_doc.employee}</li>
+                        <li><strong>Amount:</strong> {frappe.utils.fmt_money(advance_doc.advance_amount, currency=advance_doc.currency)}</li>
+                        <li><strong>Purpose:</strong> {advance_doc.purpose}</li>
+                        <li><strong>Trip Master:</strong> {self.trip.name}</li>
+                    </ul>
+                    <p><a href="/app/employee-advance/{advance_doc.name}">Click to review and create payment</a></p>
+                """,
+                "document_type": "Employee Advance",
+                "document_name": advance_doc.name,
+                "from_user": frappe.session.user,
+                "for_user": manager.user,
+                "type": "Alert"
+            })
+            try:
+                notification_doc.insert(ignore_permissions=True)
+            except Exception as e:
+                frappe.log_error(f"Error sending notification to {manager.user}: {e}")
+
+        frappe.db.commit()
 
     def _get_advance_account(self):
         """Get employee advance account from company"""

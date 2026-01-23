@@ -1,57 +1,61 @@
 frappe.ui.form.on('Payment Entry', {
-    onload: function(frm) {
+    onload: function (frm) {
         // Create a container for recent payments at the end of form
         if (!frm.$recent_payments_container) {
             frm.$recent_payments_container = $('<div class="form-section" style="margin-top: 30px;"></div>');
             frm.$wrapper.find('.form-layout').append(frm.$recent_payments_container);
         }
-        
+
+        // Hide plumbing fields for "Maximum Simplicity"
+        frm.set_df_property('naming_series', 'hidden', 1);
+        frm.set_df_property('company', 'hidden', 1);
+
         // Set initial field visibility and requirements based on payment_type
         set_tranzaksiya_turi_visibility(frm);
     },
 
-    mode_of_payment: function(frm) {
+    mode_of_payment: function (frm) {
         if (frm.doc.mode_of_payment && frm.is_new()) {
             load_recent_payments(frm);
         } else if (!frm.doc.mode_of_payment && frm.is_new()) {
             clear_recent_payments(frm);
         }
-        
+
         // Auto-fill fields based on payment_type and mode_of_payment
         apply_payment_entry_defaults(frm);
-        
+
         // Update field labels with correct currency
         update_currency_labels(frm);
     },
 
-    refresh: function(frm) {
+    refresh: function (frm) {
         if (frm.is_new() && frm.doc.mode_of_payment) {
             load_recent_payments(frm);
         }
-        
+
         // Set field visibility and requirements
         set_tranzaksiya_turi_visibility(frm);
     },
-    
-    payment_type: function(frm) {
+
+    payment_type: function (frm) {
         // Handle field visibility when payment_type changes
         set_tranzaksiya_turi_visibility(frm);
         apply_payment_entry_defaults(frm);
     },
-    
-    posting_date: function(frm) {
+
+    posting_date: function (frm) {
         // Update balances when date changes
         if (frm.doc.mode_of_payment) {
             apply_payment_entry_defaults(frm);
         }
     },
-    
-    paid_from: function(frm) {
+
+    paid_from: function (frm) {
         // Update balance when paid_from changes
         update_paid_from_balance(frm);
     },
-    
-    paid_to: function(frm) {
+
+    paid_to: function (frm) {
         // Update balance when paid_to changes
         update_paid_to_balance(frm);
     }
@@ -73,7 +77,7 @@ function apply_payment_entry_defaults(frm) {
     if (!frm.doc.payment_type || !frm.doc.mode_of_payment || !frm.doc.company || !frm.doc.posting_date) {
         return;
     }
-    
+
     frappe.call({
         method: 'akfa_accounting.akfa_accounting.api.payment_entry_api.get_payment_entry_defaults',
         args: {
@@ -82,10 +86,10 @@ function apply_payment_entry_defaults(frm) {
             company: frm.doc.company,
             posting_date: frm.doc.posting_date
         },
-        callback: function(r) {
+        callback: function (r) {
             if (r.message && Object.keys(r.message).length > 0) {
                 const defaults = r.message;
-                
+
                 // Set accounts and party first
                 if (defaults.paid_from) {
                     frm.set_value('paid_from', defaults.paid_from);
@@ -99,9 +103,9 @@ function apply_payment_entry_defaults(frm) {
                 if (defaults.party) {
                     frm.set_value('party', defaults.party);
                 }
-                
+
                 // Set balances after a delay to override ERPNext's default behavior
-                setTimeout(function() {
+                setTimeout(function () {
                     if (defaults.paid_from_account_balance !== undefined) {
                         frm.set_value('paid_from_account_balance', defaults.paid_from_account_balance);
                     }
@@ -117,14 +121,14 @@ function apply_payment_entry_defaults(frm) {
 function update_paid_from_balance(frm) {
     if (frm.doc.paid_from && frm.doc.posting_date) {
         // Use setTimeout to ensure this runs after ERPNext's handlers
-        setTimeout(function() {
+        setTimeout(function () {
             frappe.call({
                 method: 'erpnext.accounts.utils.get_balance_on',
                 args: {
                     account: frm.doc.paid_from,
                     date: frm.doc.posting_date
                 },
-                callback: function(r) {
+                callback: function (r) {
                     if (r.message !== undefined) {
                         frm.set_value('paid_from_account_balance', r.message);
                     }
@@ -137,14 +141,14 @@ function update_paid_from_balance(frm) {
 function update_paid_to_balance(frm) {
     if (frm.doc.paid_to && frm.doc.posting_date) {
         // Use setTimeout to ensure this runs after ERPNext's handlers
-        setTimeout(function() {
+        setTimeout(function () {
             frappe.call({
                 method: 'erpnext.accounts.utils.get_balance_on',
                 args: {
                     account: frm.doc.paid_to,
                     date: frm.doc.posting_date
                 },
-                callback: function(r) {
+                callback: function (r) {
                     if (r.message !== undefined) {
                         frm.set_value('paid_to_account_balance', r.message);
                     }
@@ -159,19 +163,19 @@ function update_currency_labels(frm) {
     if (!frm.doc.mode_of_payment) {
         return;
     }
-    
+
     let currency = 'USD';
     let currency_symbol = '$';
-    
+
     if (frm.doc.mode_of_payment.includes('UZS')) {
         currency = 'UZS';
         currency_symbol = 'so\'m';
     }
-    
+
     // Update field labels
     frm.set_df_property('paid_amount', 'label', `Paid Amount (${currency})`);
     frm.set_df_property('received_amount', 'label', `Received Amount (${currency})`);
-    
+
     // Refresh fields to show new labels
     frm.refresh_field('paid_amount');
     frm.refresh_field('received_amount');
@@ -201,7 +205,7 @@ function load_recent_payments(frm, page = 1) {
             start: start,
             limit: limit
         },
-        callback: function(r) {
+        callback: function (r) {
             if (r.message && r.message.data) {
                 render_recent_payments(frm, r.message, page);
             } else {
@@ -316,21 +320,21 @@ function render_recent_payments(frm, response, page) {
     frm.$recent_payments_container.html(html);
 
     // Event handlers
-    frm.$recent_payments_container.find('.prev-page-btn').on('click', function() {
+    frm.$recent_payments_container.find('.prev-page-btn').on('click', function () {
         const currentPage = parseInt($(this).data('page'));
         if (currentPage > 1) {
             load_recent_payments(frm, currentPage - 1);
         }
     });
 
-    frm.$recent_payments_container.find('.next-page-btn').on('click', function() {
+    frm.$recent_payments_container.find('.next-page-btn').on('click', function () {
         const currentPage = parseInt($(this).data('page'));
         if (currentPage < total_pages) {
             load_recent_payments(frm, currentPage + 1);
         }
     });
 
-    frm.$recent_payments_container.find('.payment-row').on('click', function(e) {
+    frm.$recent_payments_container.find('.payment-row').on('click', function (e) {
         if (!$(e.target).is('a')) {
             const paymentName = $(this).data('name');
             frappe.set_route('Form', 'Payment Entry', paymentName);
@@ -352,5 +356,5 @@ function get_status_color(status) {
 
 function format_currency(amount) {
     if (!amount) return '0.00';
-    return frappe.format(amount, {fieldtype: 'Currency'});
+    return frappe.format(amount, { fieldtype: 'Currency' });
 }

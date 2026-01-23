@@ -66,9 +66,20 @@ function set_tranzaksiya_turi_visibility(frm) {
     if (frm.doc.payment_type === 'Receive') {
         frm.set_df_property('custom_tranzaksiya_turi', 'hidden', 0);
         frm.set_df_property('custom_tranzaksiya_turi', 'reqd', 1);
+
+        // Unlock party_type for Receive triggers
+        frm.set_df_property('party_type', 'read_only', 0);
     } else {
         frm.set_df_property('custom_tranzaksiya_turi', 'hidden', 1);
         frm.set_df_property('custom_tranzaksiya_turi', 'reqd', 0);
+    }
+
+    // MAXIMALLY SIMPLE: Lock Party Type if it is 'Pay' ONLY for maincash1@gmail.com
+    if (frm.doc.payment_type === 'Pay' && frappe.session.user === 'maincash1@gmail.com') {
+        frm.set_df_property('party_type', 'read_only', 1);
+    } else {
+        // Unlock it for others or if not Pay (so admins/others aren't blocked)
+        frm.set_df_property('party_type', 'read_only', 0);
     }
 }
 

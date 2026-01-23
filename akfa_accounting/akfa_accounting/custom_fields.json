@@ -1,12 +1,21 @@
 [
- {
-  "doctype": "Custom Field",
-  "dt": "Payment Entry",
-  "fieldname": "custom_is_distributed",
-  "fieldtype": "Check",
-  "insert_after": "custom_tranzaksiya_turi",
-  "label": "Is Distributed",
-  "read_only": 1,
-  "description": "Checked when this Payment Entry has been distributed via Cash Distribution Entry"
- }
+    {
+        "doctype": "Custom Field",
+        "dt": "Payment Entry",
+        "fieldname": "custom_is_distributed",
+        "fieldtype": "Check",
+        "insert_after": "custom_tranzaksiya_turi",
+        "label": "Is Distributed",
+        "read_only": 1,
+        "description": "Checked when this Payment Entry has been distributed via Cash Distribution Entry"
+    },
+    {
+        "doctype": "Custom Field",
+        "dt": "Payment Entry",
+        "fieldname": "custom_exchange_rate_info",
+        "fieldtype": "HTML",
+        "insert_after": "target_exchange_rate",
+        "label": "Exchange Rate Info",
+        "read_only": 1
+    }
 ]

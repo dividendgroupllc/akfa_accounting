@@ -12,6 +12,7 @@ frappe.ui.form.on('Payment Entry', {
 
         // Set initial field visibility and requirements based on payment_type
         set_tranzaksiya_turi_visibility(frm);
+        update_exchange_rate_info(frm);
     },
 
     mode_of_payment: function (frm) {
@@ -26,6 +27,7 @@ frappe.ui.form.on('Payment Entry', {
 
         // Update field labels with correct currency
         update_currency_labels(frm);
+        update_exchange_rate_info(frm);
     },
 
     refresh: function (frm) {
@@ -35,6 +37,7 @@ frappe.ui.form.on('Payment Entry', {
 
         // Set field visibility and requirements
         set_tranzaksiya_turi_visibility(frm);
+        update_exchange_rate_info(frm);
     },
 
     payment_type: function (frm) {
@@ -48,17 +51,34 @@ frappe.ui.form.on('Payment Entry', {
         if (frm.doc.mode_of_payment) {
             apply_payment_entry_defaults(frm);
             load_recent_payments(frm);
+            update_exchange_rate_info(frm);
         }
     },
 
     paid_from: function (frm) {
         // Update balance when paid_from changes
         update_paid_from_balance(frm);
+        // Update exchange rate info when account (and thus currency) changes
+        setTimeout(function() {
+            update_exchange_rate_info(frm);
+        }, 500);
     },
 
     paid_to: function (frm) {
         // Update balance when paid_to changes
         update_paid_to_balance(frm);
+        // Update exchange rate info when account (and thus currency) changes
+        setTimeout(function() {
+            update_exchange_rate_info(frm);
+        }, 500);
+    },
+
+    paid_from_account_currency: function(frm) {
+        update_exchange_rate_info(frm);
+    },
+
+    paid_to_account_currency: function(frm) {
+        update_exchange_rate_info(frm);
     }
 });
 
@@ -397,3 +417,100 @@ function format_currency(amount, mode_of_payment) {
     // Default for USD or others
     return symbol + format_number(amount, '#,###.##');
 }
+
+function update_exchange_rate_info(frm) {
+    // Show exchange rate info when paid_from and paid_to currencies are different
+    const from_currency = frm.doc.paid_from_account_currency;
+    const to_currency = frm.doc.paid_to_account_currency;
+    
+    // If currencies are same or not yet set, clear and return
+    if (!from_currency || !to_currency || from_currency === to_currency) {
+        frm.set_df_property('custom_exchange_rate_info', 'options', '');
+        frm.refresh_field('custom_exchange_rate_info');
+        return;
+    }
+
+    const posting_date = frm.doc.posting_date || frappe.datetime.get_today();
+
+    frappe.call({
+        method: 'akfa_accounting.akfa_accounting.api.payment_entry_api.get_daily_exchange_rates',
+        args: {
+            date: posting_date
+        },
+        callback: function(r) {
+            if (r.message && r.message.usd_to_uzs) {
+                const rates = r.message;
+                const usd_to_uzs = flt(rates.usd_to_uzs);
+                
+                // Format rate with thousands separator
+                const formatted_rate = format_number(usd_to_uzs, '#,###.##');
+                
+                // Determine direction based on currencies
+                let direction_text = '';
+                let main_rate = '';
+                
+                if (from_currency === 'USD' && to_currency === 'UZS') {
+                    direction_text = '1 USD = ' + formatted_rate + ' UZS';
+                    main_rate = formatted_rate;
+                } else if (from_currency === 'UZS' && to_currency === 'USD') {
+                    direction_text = '1 USD = ' + formatted_rate + ' UZS';
+                    main_rate = formatted_rate;
+                } else {
+                    direction_text = '1 USD = ' + formatted_rate + ' UZS';
+                    main_rate = formatted_rate;
+                }
+                
+                const html = `
+                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                                padding: 15px 20px; 
+                                border-radius: 8px; 
+                                color: white;
+                                margin: 10px 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <div style="font-size: 12px; opacity: 0.9; margin-bottom: 4px;">
+                                    <i class="fa fa-calendar"></i> ${frappe.datetime.str_to_user(rates.date)}
+                                </div>
+                                <div style="font-size: 11px; opacity: 0.8;">Bugungi kurs</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 24px; font-weight: bold; font-family: monospace;">
+                                    ${main_rate}
+                                </div>
+                                <div style="font-size: 11px; opacity: 0.8;">${direction_text}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                frm.set_df_property('custom_exchange_rate_info', 'options', html);
+                frm.refresh_field('custom_exchange_rate_info');
+            } else {
+                // No rate found
+                const html = `
+                    <div style="background: #ffebee; 
+                                padding: 15px 20px; 
+                                border-radius: 8px; 
+                                color: #c62828;
+                                border: 1px solid #ffcdd2;
+                                margin: 10px 0;">
+                        <i class="fa fa-exclamation-triangle"></i>
+                        <strong>Kurs topilmadi!</strong><br>
+                        <span style="font-size: 12px;">
+                            ${posting_date} sanasi uchun valyuta kursi mavjud emas. 
+                            Currency Exchange ro'yxatiga kurs qo'shing.
+                        </span>
+                    </div>
+                `;
+                
+                frm.set_df_property('custom_exchange_rate_info', 'options', html);
+                frm.refresh_field('custom_exchange_rate_info');
+            }
+        },
+        error: function() {
+            frm.set_df_property('custom_exchange_rate_info', 'options', '');
+            frm.refresh_field('custom_exchange_rate_info');
+        }
+    });
+}
+

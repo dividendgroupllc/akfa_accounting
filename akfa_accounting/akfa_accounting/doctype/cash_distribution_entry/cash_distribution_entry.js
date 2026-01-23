@@ -160,12 +160,39 @@ frappe.ui.form.on("Cash Distribution Detail", {
 	},
 
 	currency(frm, cdt, cdn) {
-		// Just recalculate totals when currency changes
-		// Account is set based on party_currency, not distribution currency
+		let row = frappe.get_doc(cdt, cdn);
+		
+		// If currency changed and amount exists, recalculate USD equivalent
+		if (flt(row.amount) > 0) {
+			if (row.currency === "UZS") {
+				convert_uzs_to_usd(frm, cdt, cdn, row.amount);
+			} else if (row.currency === "USD") {
+				// USD to USD - same value
+				frappe.model.set_value(cdt, cdn, "usd_ekvivalent", row.amount);
+			}
+		}
+		
 		frm.trigger("calculate_totals");
 	},
 
 	amount(frm, cdt, cdn) {
+		let row = frappe.get_doc(cdt, cdn);
+		let amount = flt(row.amount);
+		
+		if (amount <= 0) {
+			frappe.model.set_value(cdt, cdn, "usd_ekvivalent", 0);
+			frm.trigger("calculate_totals");
+			return;
+		}
+		
+		if (row.currency === "UZS") {
+			// UZS amount entered, convert to USD
+			convert_uzs_to_usd(frm, cdt, cdn, amount);
+		} else if (row.currency === "USD") {
+			// USD to USD - same value
+			frappe.model.set_value(cdt, cdn, "usd_ekvivalent", amount);
+		}
+		
 		frm.trigger("calculate_totals");
 	},
 
@@ -178,3 +205,41 @@ frappe.ui.form.on("Cash Distribution Detail", {
 		frm.trigger("calculate_totals");
 	}
 });
+
+function convert_uzs_to_usd(frm, cdt, cdn, uzs_amount) {
+	// Convert UZS to USD
+	frappe.call({
+		method: "akfa_accounting.akfa_accounting.api.payment_entry_api.get_daily_exchange_rates",
+		args: {
+			date: frm.doc.posting_date
+		},
+		callback: function(r) {
+			if (r.message && r.message.usd_to_uzs) {
+				let exchange_rate = flt(r.message.usd_to_uzs);
+				if (exchange_rate > 0) {
+					let usd_amount = flt(uzs_amount / exchange_rate, 2);
+					
+					// Set USD equivalent
+					frappe.model.set_value(cdt, cdn, "usd_ekvivalent", usd_amount);
+					
+					frappe.show_alert({
+						message: __("{0} UZS → {1} USD (Kurs: {2})", [
+							format_number(uzs_amount),
+							format_number(usd_amount, null, 2),
+							format_number(exchange_rate)
+						]),
+						indicator: "green"
+					}, 5);
+					
+					frm.trigger("calculate_totals");
+				}
+			} else {
+				frappe.msgprint({
+					title: __("Kurs topilmadi"),
+					message: __("{0} sanasi uchun valyuta kursi mavjud emas.", [frm.doc.posting_date]),
+					indicator: "red"
+				});
+			}
+		}
+	});
+}

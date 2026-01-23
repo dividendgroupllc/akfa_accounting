@@ -149,3 +149,54 @@ def get_payment_entry_defaults(payment_type, mode_of_payment, company, posting_d
 	
 	return result
 
+
+@frappe.whitelist()
+def get_daily_exchange_rates(date=None):
+    """
+    Returns exchange rates for USD <-> UZS for the given date or the latest available.
+    Directly queries Currency Exchange table for reliability.
+    """
+    if not date:
+        date = frappe.utils.today()
+    
+    try:
+        # Get latest USD -> UZS rate on or before the given date
+        usd_to_uzs_entry = frappe.db.get_value(
+            "Currency Exchange",
+            filters={
+                "from_currency": "USD",
+                "to_currency": "UZS",
+                "date": ["<=", date]
+            },
+            fieldname=["exchange_rate", "date"],
+            order_by="date desc",
+            as_dict=True
+        )
+        
+        # Get latest UZS -> USD rate on or before the given date
+        uzs_to_usd_entry = frappe.db.get_value(
+            "Currency Exchange",
+            filters={
+                "from_currency": "UZS",
+                "to_currency": "USD",
+                "date": ["<=", date]
+            },
+            fieldname=["exchange_rate", "date"],
+            order_by="date desc",
+            as_dict=True
+        )
+        
+        usd_to_uzs = usd_to_uzs_entry.get("exchange_rate") if usd_to_uzs_entry else None
+        actual_date = usd_to_uzs_entry.get("date") if usd_to_uzs_entry else date
+        uzs_to_usd = uzs_to_usd_entry.get("exchange_rate") if uzs_to_usd_entry else None
+        
+        return {
+            "usd_to_uzs": usd_to_uzs,
+            "uzs_to_usd": uzs_to_usd,
+            "date": str(actual_date),
+            "requested_date": date
+        }
+    except Exception as e:
+        frappe.log_error(f"Error fetching exchange rates: {e}")
+        return {}
+

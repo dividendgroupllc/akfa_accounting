@@ -2,14 +2,18 @@ import frappe
 import math
 
 @frappe.whitelist()
-def get_recent_payments(mode_of_payment, start=0, limit=50):
-    """Berilgan Mode of Payment bo'yicha oxirgi Payment Entry larni qaytaradi."""
+def get_recent_payments(mode_of_payment, posting_date=None, start=0, limit=50):
+    """Berilgan Mode of Payment va sana bo'yicha oxirgi Payment Entry larni qaytaradi."""
     start = int(start)
     limit = int(limit)
+    
+    if not posting_date:
+        posting_date = frappe.utils.today()
 
     filters = {
         "docstatus": 1,
         "mode_of_payment": mode_of_payment,
+        "posting_date": posting_date
     }
 
     total = frappe.db.count("Payment Entry", filters=filters)
@@ -26,9 +30,10 @@ def get_recent_payments(mode_of_payment, start=0, limit=50):
         FROM `tabPayment Entry`
         WHERE docstatus = 1
           AND mode_of_payment = %s
+          AND posting_date = %s
         ORDER BY posting_date DESC, modified DESC
         LIMIT %s OFFSET %s
-    """, (mode_of_payment, limit, start), as_dict=True)
+    """, (mode_of_payment, posting_date, limit, start), as_dict=True)
 
     total_pages = math.ceil(total / limit) if limit else 1
 

@@ -47,6 +47,7 @@ frappe.ui.form.on('Payment Entry', {
         // Update balances when date changes
         if (frm.doc.mode_of_payment) {
             apply_payment_entry_defaults(frm);
+            load_recent_payments(frm);
         }
     },
 
@@ -218,6 +219,7 @@ function load_recent_payments(frm, page = 1) {
         method: 'akfa_accounting.akfa_accounting.api.payment_entry_api.get_recent_payments',
         args: {
             mode_of_payment: mode_of_payment,
+            posting_date: frm.doc.posting_date,
             start: start,
             limit: limit
         },
@@ -294,10 +296,10 @@ function render_recent_payments(frm, response, page) {
                 <td style="padding: 10px;">${payment.party_type || '-'}</td>
                 <td style="padding: 10px;">${payment.party || '-'}</td>
                 <td style="padding: 10px; text-align: right; font-family: monospace;">
-                    ${format_currency(payment.paid_amount)}
+                    ${format_currency(payment.paid_amount, 'USD')}
                 </td>
                 <td style="padding: 10px; text-align: right; font-family: monospace;">
-                    ${format_currency(payment.received_amount)}
+                    ${format_currency(payment.received_amount, frm.doc.mode_of_payment)}
                 </td>
                 <td style="padding: 10px;">
                     <span class="indicator-pill ${status_color}" style="font-size: 11px;">
@@ -370,7 +372,18 @@ function get_status_color(status) {
     return status_colors[status] || 'gray';
 }
 
-function format_currency(amount) {
+function format_currency(amount, mode_of_payment) {
     if (!amount) return '0.00';
-    return frappe.format(amount, { fieldtype: 'Currency' });
+
+    // Determine currency based on mode_of_payment
+    let symbol = '$ ';
+
+    if (mode_of_payment && mode_of_payment.includes('UZS')) {
+        symbol = ' so\'m';
+        // Manual formatting for UZS: remove existing symbol if any, append 'so'm'
+        return format_number(amount, '#,###.##') + symbol;
+    }
+
+    // Default for USD or others
+    return symbol + format_number(amount, '#,###.##');
 }

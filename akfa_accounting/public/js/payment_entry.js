@@ -113,6 +113,11 @@ function apply_payment_entry_defaults(frm) {
                         frm.set_value('paid_to_account_balance', defaults.paid_to_account_balance);
                     }
                 }, 500);
+
+                // HARDCODED RULE: Davron can only pay to the default 'Ofis' party.
+                if (frappe.session.user === 'maincash1@gmail.com') {
+                    frm.set_df_property('party', 'read_only', 1);
+                }
             }
         }
     });

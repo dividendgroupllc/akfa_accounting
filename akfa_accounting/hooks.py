@@ -23,9 +23,6 @@ fixtures = [
 		"filters": [["doc_type", "in", ["Project", "Vehicle", "Travel Request", "Expense Claim", "Expense Claim Detail"]]],
 	},
 	{
-		"dt": "Mode of Payment",
-	},
-	{
 		"dt": "Print Format",
 		"filters": [["module", "=", "akfa_accounting"]],
 	},

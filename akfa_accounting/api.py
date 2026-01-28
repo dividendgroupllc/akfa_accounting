@@ -6,7 +6,7 @@ from akfa_accounting.mobile_api.trip_info import (
 	get_active_trip as get_active_trip_service,
 	get_trip_balance as get_trip_balance_service,
 )
-
+ 
 
 @frappe.whitelist()
 def log_trip_path(trip_master, employee, latitude, longitude, activity_type=None):

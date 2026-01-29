@@ -7,9 +7,7 @@
  "field_order": [
   "posting_date",
   "kassa_rasxod",
-  "column_break_1",
-  "amount_usd",
-  "amount_uzs"
+  "amount_usd"
  ],
  "fields": [
   {
@@ -28,28 +26,18 @@
    "read_only": 1
   },
   {
-   "fieldname": "column_break_1",
-   "fieldtype": "Column Break"
-  },
-  {
    "fieldname": "amount_usd",
    "fieldtype": "Currency",
    "in_list_view": 1,
-   "label": "Summa USD",
-   "read_only": 1
-  },
-  {
-   "fieldname": "amount_uzs",
-   "fieldtype": "Currency",
-   "in_list_view": 1,
-   "label": "Summa UZS",
+   "label": "Summa (USD)",
+   "options": "USD",
    "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-01-29 12:00:00.000000",
+ "modified": "2026-01-29 14:00:00.000000",
  "modified_by": "Administrator",
  "module": "akfa_accounting",
  "name": "Cash Distribution Rasxod Item",

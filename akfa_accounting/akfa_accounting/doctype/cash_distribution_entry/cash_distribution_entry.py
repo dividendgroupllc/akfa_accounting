@@ -85,13 +85,12 @@ class CashDistributionEntry(Document):
 			if t.currency == "UZS"
 		)
 
-		# Hamidulla Kassa Rasxod (investor qopladi, Aripovga qo'shiladi)
+		# Hamidulla Kassa Rasxod (investor qopladi, converted to USD)
 		self.hamidulla_rasxod_usd = sum(flt(r.amount_usd) for r in self.rasxod_items)
-		self.hamidulla_rasxod_uzs = sum(flt(r.amount_uzs) for r in self.rasxod_items)
 
 		# ARIPOV TOTAL = Internal Transfers + Hamidulla Rasxod
 		self.aripov_total_usd = flt(self.internal_transfers_usd) + flt(self.hamidulla_rasxod_usd)
-		self.aripov_total_uzs = flt(self.internal_transfers_uzs) + flt(self.hamidulla_rasxod_uzs)
+		self.aripov_total_uzs = flt(self.internal_transfers_uzs)
 
 		# Total Distributed (from distribution_details)
 		self.total_distributed_usd = sum(
@@ -339,12 +338,19 @@ def get_accounts_by_numbers(account_numbers, company):
 
 
 @frappe.whitelist()
-def get_cash_distribution_data(aripov_account, posting_date, company):
-	"""Fetch all data for Cash Distribution Entry"""
+def get_cash_distribution_data(posting_date, company):
+	"""Fetch all data for Cash Distribution Entry
 
-	# Determine currency from Aripov account
-	account_number = frappe.db.get_value("Account", aripov_account, "account_number")
-	currency = "USD" if account_number == "1114" else "UZS"
+	Now fetches both USD and UZS account balances,
+	and converts Hamidulla UZS expenses to USD.
+	"""
+
+	# Get exchange rate for UZS → USD conversion
+	exchange_rate = frappe.db.get_value(
+		"Currency Exchange",
+		{"from_currency": "USD", "to_currency": "UZS", "date": posting_date},
+		"exchange_rate"
+	) or 1
 
 	# 1. Get Davron Tushumlari (Reference)
 	davron_accounts = get_accounts_by_numbers(DAVRON_ACCOUNTS, company)
@@ -370,59 +376,80 @@ def get_cash_distribution_data(aripov_account, posting_date, company):
 
 	# Add source account for display
 	for item in davron_items:
-		item['source_account'] = get_account_by_number("1114" if item.currency == "USD" else "1115", company)
+		item['source_account'] = get_account_by_number("1114" if item['currency'] == "USD" else "1115", company)
 
-	# 2. Get Internal Transfers (Davron → Aripov)
-	transfer_items = frappe.db.sql("""
-		SELECT
-			pe.name as payment_entry,
-			pe.paid_to_account_currency as currency,
-			pe.paid_amount as amount,
-			pe.paid_from as source_account
-		FROM `tabPayment Entry` pe
-		WHERE pe.posting_date = %s
-			AND pe.payment_type = 'Internal Transfer'
-			AND pe.paid_to = %s
-			AND pe.company = %s
-			AND pe.docstatus = 1
-			AND IFNULL(pe.custom_is_distributed, 0) = 0
-		ORDER BY pe.name
-	""", (posting_date, aripov_account, company), as_dict=True)
+	# 2. Get Internal Transfers (Davron → Aripov) for BOTH accounts
+	aripov_usd_account = get_account_by_number("1114", company)
+	aripov_uzs_account = get_account_by_number("1115", company)
+	aripov_accounts = [acc for acc in [aripov_usd_account, aripov_uzs_account] if acc]
 
-	# 3. Get Hamidulla Kassa Rasxod
-	hamidulla_mode = HAMIDULLA_MODES.get(currency)
+	transfer_items = []
+	if aripov_accounts:
+		transfer_items = frappe.db.sql("""
+			SELECT
+				pe.name as payment_entry,
+				pe.paid_to_account_currency as currency,
+				pe.paid_amount as amount,
+				pe.paid_from as source_account
+			FROM `tabPayment Entry` pe
+			WHERE pe.posting_date = %s
+				AND pe.payment_type = 'Internal Transfer'
+				AND pe.paid_to IN %s
+				AND pe.company = %s
+				AND pe.docstatus = 1
+				AND IFNULL(pe.custom_is_distributed, 0) = 0
+			ORDER BY pe.name
+		""", (posting_date, aripov_accounts, company), as_dict=True)
+
+	# 3. Get Hamidulla Kassa Rasxod (BOTH USD and UZS, convert UZS to USD)
 	rasxod_items = []
 
-	if hamidulla_mode:
-		rasxod_items = frappe.db.sql("""
-			SELECT
-				kr.name as kassa_rasxod,
-				kr.posting_date,
-				kr.total_amount as amount_usd,
-				0 as amount_uzs
-			FROM `tabKassa Rasxod` kr
-			WHERE kr.posting_date = %s
-				AND kr.mode_of_payment = %s
-				AND kr.docstatus = 1
-			ORDER BY kr.posting_date
-		""", (posting_date, hamidulla_mode), as_dict=True)
+	# Get USD Rasxod
+	usd_rasxod = frappe.db.sql("""
+		SELECT
+			kr.name as kassa_rasxod,
+			kr.posting_date,
+			kr.total_amount as amount_usd,
+			'USD' as original_currency
+		FROM `tabKassa Rasxod` kr
+		WHERE kr.posting_date = %s
+			AND kr.mode_of_payment = %s
+			AND kr.docstatus = 1
+		ORDER BY kr.posting_date
+	""", (posting_date, HAMIDULLA_MODES['USD']), as_dict=True)
 
-		# If UZS mode, swap the amount fields
-		if currency == "UZS":
-			for item in rasxod_items:
-				item['amount_uzs'] = item['amount_usd']
-				item['amount_usd'] = 0
+	# Get UZS Rasxod and convert to USD
+	uzs_rasxod = frappe.db.sql("""
+		SELECT
+			kr.name as kassa_rasxod,
+			kr.posting_date,
+			kr.total_amount as original_amount,
+			'UZS' as original_currency
+		FROM `tabKassa Rasxod` kr
+		WHERE kr.posting_date = %s
+			AND kr.mode_of_payment = %s
+			AND kr.docstatus = 1
+		ORDER BY kr.posting_date
+	""", (posting_date, HAMIDULLA_MODES['UZS']), as_dict=True)
 
-	# 4. Get account balance
+	# Convert UZS to USD
+	for item in uzs_rasxod:
+		item['amount_usd'] = flt(item['original_amount']) / flt(exchange_rate) if exchange_rate else 0
+
+	rasxod_items = usd_rasxod + uzs_rasxod
+
+	# 4. Get BOTH account balances
 	from erpnext.accounts.utils import get_balance_on
-	account_balance = get_balance_on(account=aripov_account, date=posting_date) or 0
+	aripov_usd_balance = get_balance_on(account=aripov_usd_account, date=posting_date) if aripov_usd_account else 0
+	aripov_uzs_balance = get_balance_on(account=aripov_uzs_account, date=posting_date) if aripov_uzs_account else 0
 
 	return {
 		"davron_items": davron_items,
 		"transfer_items": transfer_items,
 		"rasxod_items": rasxod_items,
-		"account_balance": account_balance,
-		"currency": currency
+		"aripov_usd_balance": aripov_usd_balance or 0,
+		"aripov_uzs_balance": aripov_uzs_balance or 0,
+		"exchange_rate": exchange_rate
 	}
 
 

@@ -2,18 +2,6 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on("Cash Distribution Entry", {
-	onload(frm) {
-		// Filter Aripov account to only show 1114 and 1115
-		frm.set_query("aripov_account", function() {
-			return {
-				filters: {
-					"account_number": ["in", ["1114", "1115"]],
-					"company": frm.doc.company
-				}
-			};
-		});
-	},
-
 	refresh(frm) {
 		// Add custom button to fetch data
 		if (frm.doc.docstatus === 0) {
@@ -38,33 +26,26 @@ frappe.ui.form.on("Cash Distribution Entry", {
 	},
 
 	posting_date(frm) {
-		if (frm.doc.posting_date && frm.doc.company && frm.doc.aripov_account) {
+		if (frm.doc.posting_date && frm.doc.company) {
 			frm.trigger("fetch_all_data");
 		}
 	},
 
 	company(frm) {
-		// Clear aripov_account when company changes
-		frm.set_value("aripov_account", "");
-		frm.set_value("account_balance", 0);
-	},
-
-	aripov_account(frm) {
-		if (frm.doc.aripov_account && frm.doc.posting_date && frm.doc.company) {
-			frm.trigger("fetch_all_data");
-		}
+		// Clear balances when company changes
+		frm.set_value("aripov_usd_balance", 0);
+		frm.set_value("aripov_uzs_balance", 0);
 	},
 
 	fetch_all_data(frm) {
-		if (!frm.doc.posting_date || !frm.doc.company || !frm.doc.aripov_account) {
-			frappe.msgprint(__("Please select Posting Date, Company, and Aripov Account first"));
+		if (!frm.doc.posting_date || !frm.doc.company) {
+			frappe.msgprint(__("Please select Posting Date and Company first"));
 			return;
 		}
 
 		frappe.call({
 			method: "akfa_accounting.akfa_accounting.doctype.cash_distribution_entry.cash_distribution_entry.get_cash_distribution_data",
 			args: {
-				aripov_account: frm.doc.aripov_account,
 				posting_date: frm.doc.posting_date,
 				company: frm.doc.company
 			},
@@ -72,8 +53,9 @@ frappe.ui.form.on("Cash Distribution Entry", {
 			freeze_message: __("Fetching Data..."),
 			callback: function(r) {
 				if (r.message) {
-					// Set account balance
-					frm.set_value("account_balance", r.message.account_balance || 0);
+					// Set account balances
+					frm.set_value("aripov_usd_balance", r.message.aripov_usd_balance || 0);
+					frm.set_value("aripov_uzs_balance", r.message.aripov_uzs_balance || 0);
 
 					// Clear existing items
 					frm.clear_table("items");
@@ -102,14 +84,13 @@ frappe.ui.form.on("Cash Distribution Entry", {
 						});
 					}
 
-					// 3. Populate Hamidulla Kassa Rasxod
+					// 3. Populate Hamidulla Kassa Rasxod (all converted to USD)
 					if (r.message.rasxod_items && r.message.rasxod_items.length > 0) {
 						r.message.rasxod_items.forEach(function(item) {
 							let row = frm.add_child("rasxod_items");
 							row.posting_date = item.posting_date;
 							row.kassa_rasxod = item.kassa_rasxod;
 							row.amount_usd = item.amount_usd;
-							row.amount_uzs = item.amount_uzs;
 						});
 					}
 
@@ -162,19 +143,16 @@ frappe.ui.form.on("Cash Distribution Entry", {
 		frm.set_value("internal_transfers_usd", internal_transfers_usd);
 		frm.set_value("internal_transfers_uzs", internal_transfers_uzs);
 
-		// Hamidulla Kassa Rasxod (investor qopladi)
+		// Hamidulla Kassa Rasxod (all converted to USD)
 		let hamidulla_rasxod_usd = 0;
-		let hamidulla_rasxod_uzs = 0;
 		(frm.doc.rasxod_items || []).forEach(function(item) {
 			hamidulla_rasxod_usd += flt(item.amount_usd);
-			hamidulla_rasxod_uzs += flt(item.amount_uzs);
 		});
 		frm.set_value("hamidulla_rasxod_usd", hamidulla_rasxod_usd);
-		frm.set_value("hamidulla_rasxod_uzs", hamidulla_rasxod_uzs);
 
 		// ARIPOV TOTAL = Internal Transfers + Hamidulla Rasxod
 		let aripov_total_usd = internal_transfers_usd + hamidulla_rasxod_usd;
-		let aripov_total_uzs = internal_transfers_uzs + hamidulla_rasxod_uzs;
+		let aripov_total_uzs = internal_transfers_uzs;
 		frm.set_value("aripov_total_usd", aripov_total_usd);
 		frm.set_value("aripov_total_uzs", aripov_total_uzs);
 

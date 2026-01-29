@@ -11,23 +11,19 @@
   "company",
   "posting_date",
   "column_break_1",
-  "aripov_account",
-  "account_balance",
+  "aripov_usd_balance",
+  "aripov_uzs_balance",
   "section_break_davron",
   "items",
   "davron_received_usd",
-  "column_break_davron",
   "davron_received_uzs",
   "section_break_transfers",
   "transfer_items",
   "internal_transfers_usd",
-  "column_break_transfers",
   "internal_transfers_uzs",
   "section_break_rasxod",
   "rasxod_items",
   "hamidulla_rasxod_usd",
-  "column_break_rasxod",
-  "hamidulla_rasxod_uzs",
   "section_break_distribution",
   "distribution_details",
   "section_break_totals",
@@ -74,15 +70,17 @@
    "reqd": 1
   },
   {
-   "fieldname": "aripov_account",
-   "fieldtype": "Link",
-   "label": "Aripov Schoti",
-   "options": "Account"
+   "fieldname": "aripov_usd_balance",
+   "fieldtype": "Currency",
+   "label": "Aripov USD Balans",
+   "options": "USD",
+   "read_only": 1
   },
   {
-   "fieldname": "account_balance",
+   "fieldname": "aripov_uzs_balance",
    "fieldtype": "Currency",
-   "label": "Balans",
+   "label": "Aripov UZS Balans",
+   "options": "UZS",
    "read_only": 1
   },
   {
@@ -101,16 +99,14 @@
    "fieldname": "davron_received_usd",
    "fieldtype": "Currency",
    "label": "Davron Total (USD)",
+   "options": "USD",
    "read_only": 1
-  },
-  {
-   "fieldname": "column_break_davron",
-   "fieldtype": "Column Break"
   },
   {
    "fieldname": "davron_received_uzs",
    "fieldtype": "Currency",
    "label": "Davron Total (UZS)",
+   "options": "UZS",
    "read_only": 1
   },
   {
@@ -129,16 +125,14 @@
    "fieldname": "internal_transfers_usd",
    "fieldtype": "Currency",
    "label": "Transfers (USD)",
+   "options": "USD",
    "read_only": 1
-  },
-  {
-   "fieldname": "column_break_transfers",
-   "fieldtype": "Column Break"
   },
   {
    "fieldname": "internal_transfers_uzs",
    "fieldtype": "Currency",
    "label": "Transfers (UZS)",
+   "options": "UZS",
    "read_only": 1
   },
   {
@@ -157,16 +151,7 @@
    "fieldname": "hamidulla_rasxod_usd",
    "fieldtype": "Currency",
    "label": "Hamidulla Rasxod (USD)",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_rasxod",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "hamidulla_rasxod_uzs",
-   "fieldtype": "Currency",
-   "label": "Hamidulla Rasxod (UZS)",
+   "options": "USD",
    "read_only": 1
   },
   {
@@ -187,23 +172,26 @@
    "label": "Totals"
   },
   {
+   "bold": 1,
+   "description": "= Internal Transfers + Hamidulla Rasxod",
    "fieldname": "aripov_total_usd",
    "fieldtype": "Currency",
    "label": "ARIPOV TOTAL (USD)",
-   "read_only": 1,
-   "bold": 1,
-   "description": "= Internal Transfers + Hamidulla Rasxod"
+   "options": "USD",
+   "read_only": 1
   },
   {
    "fieldname": "total_distributed_usd",
    "fieldtype": "Currency",
    "label": "Total Distributed (USD)",
+   "options": "USD",
    "read_only": 1
   },
   {
    "fieldname": "difference_usd",
    "fieldtype": "Currency",
    "label": "Difference (USD)",
+   "options": "USD",
    "read_only": 1
   },
   {
@@ -211,30 +199,33 @@
    "fieldtype": "Column Break"
   },
   {
+   "bold": 1,
+   "description": "= Internal Transfers + Hamidulla Rasxod",
    "fieldname": "aripov_total_uzs",
    "fieldtype": "Currency",
    "label": "ARIPOV TOTAL (UZS)",
-   "read_only": 1,
-   "bold": 1,
-   "description": "= Internal Transfers + Hamidulla Rasxod"
+   "options": "UZS",
+   "read_only": 1
   },
   {
    "fieldname": "total_distributed_uzs",
    "fieldtype": "Currency",
    "label": "Total Distributed (UZS)",
+   "options": "UZS",
    "read_only": 1
   },
   {
    "fieldname": "difference_uzs",
    "fieldtype": "Currency",
    "label": "Difference (UZS)",
+   "options": "UZS",
    "read_only": 1
   },
   {
+   "collapsible": 1,
    "fieldname": "section_break_refs",
    "fieldtype": "Section Break",
-   "label": "References",
-   "collapsible": 1
+   "label": "References"
   },
   {
    "fieldname": "journal_entry",
@@ -269,7 +260,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-01-29 12:00:00.000000",
+ "modified": "2026-01-29 14:00:00.000000",
  "modified_by": "Administrator",
  "module": "akfa_accounting",
  "name": "Cash Distribution Entry",

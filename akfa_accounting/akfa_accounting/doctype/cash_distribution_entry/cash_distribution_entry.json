@@ -8,29 +8,47 @@
  "engine": "InnoDB",
  "field_order": [
   "naming_series",
+  "company",
   "posting_date",
   "column_break_1",
-  "company",
-  "section_break_items",
+  "aripov_account",
+  "account_balance",
+  "section_break_davron",
   "items",
+  "davron_received_usd",
+  "column_break_davron",
+  "davron_received_uzs",
+  "section_break_transfers",
+  "transfer_items",
+  "internal_transfers_usd",
+  "column_break_transfers",
+  "internal_transfers_uzs",
+  "section_break_rasxod",
+  "rasxod_items",
+  "hamidulla_rasxod_usd",
+  "column_break_rasxod",
+  "hamidulla_rasxod_uzs",
   "section_break_distribution",
   "distribution_details",
   "section_break_totals",
-  "total_received_usd",
+  "aripov_total_usd",
   "total_distributed_usd",
   "difference_usd",
   "column_break_3",
-  "total_received_uzs",
+  "aripov_total_uzs",
   "total_distributed_uzs",
   "difference_uzs",
   "section_break_refs",
   "journal_entry",
-  "amended_from"
+  "amended_from",
+  "total_received_usd",
+  "total_received_uzs"
  ],
  "fields": [
   {
    "fieldname": "naming_series",
    "fieldtype": "Select",
+   "hidden": 1,
    "label": "Series",
    "options": "ACC-CDE-.YYYY.-",
    "reqd": 1
@@ -56,15 +74,99 @@
    "reqd": 1
   },
   {
-   "fieldname": "section_break_items",
+   "fieldname": "aripov_account",
+   "fieldtype": "Link",
+   "label": "Aripov Schoti",
+   "options": "Account"
+  },
+  {
+   "fieldname": "account_balance",
+   "fieldtype": "Currency",
+   "label": "Balans",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_davron",
    "fieldtype": "Section Break",
-   "label": "Payment Entries by Tranzaksiya Turi"
+   "label": "Davron Kassa - Bugungi Tushumlar (Reference)"
   },
   {
    "fieldname": "items",
    "fieldtype": "Table",
-   "label": "Payment Entries",
+   "label": "Davron Tushumlari",
    "options": "Cash Distribution Item",
+   "read_only": 1
+  },
+  {
+   "fieldname": "davron_received_usd",
+   "fieldtype": "Currency",
+   "label": "Davron Total (USD)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_davron",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "davron_received_uzs",
+   "fieldtype": "Currency",
+   "label": "Davron Total (UZS)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_transfers",
+   "fieldtype": "Section Break",
+   "label": "Internal Transfers (Davron → Aripov)"
+  },
+  {
+   "fieldname": "transfer_items",
+   "fieldtype": "Table",
+   "label": "Internal Transfers",
+   "options": "Cash Distribution Transfer Item",
+   "read_only": 1
+  },
+  {
+   "fieldname": "internal_transfers_usd",
+   "fieldtype": "Currency",
+   "label": "Transfers (USD)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_transfers",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "internal_transfers_uzs",
+   "fieldtype": "Currency",
+   "label": "Transfers (UZS)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_rasxod",
+   "fieldtype": "Section Break",
+   "label": "Hamidulla Kassa Rasxod (Investor qopladi)"
+  },
+  {
+   "fieldname": "rasxod_items",
+   "fieldtype": "Table",
+   "label": "Hamidulla Rasxod",
+   "options": "Cash Distribution Rasxod Item",
+   "read_only": 1
+  },
+  {
+   "fieldname": "hamidulla_rasxod_usd",
+   "fieldtype": "Currency",
+   "label": "Hamidulla Rasxod (USD)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_rasxod",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "hamidulla_rasxod_uzs",
+   "fieldtype": "Currency",
+   "label": "Hamidulla Rasxod (UZS)",
    "read_only": 1
   },
   {
@@ -85,10 +187,12 @@
    "label": "Totals"
   },
   {
-   "fieldname": "total_received_usd",
+   "fieldname": "aripov_total_usd",
    "fieldtype": "Currency",
-   "label": "Total Received (USD)",
-   "read_only": 1
+   "label": "ARIPOV TOTAL (USD)",
+   "read_only": 1,
+   "bold": 1,
+   "description": "= Internal Transfers + Hamidulla Rasxod"
   },
   {
    "fieldname": "total_distributed_usd",
@@ -107,10 +211,12 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "total_received_uzs",
+   "fieldname": "aripov_total_uzs",
    "fieldtype": "Currency",
-   "label": "Total Received (UZS)",
-   "read_only": 1
+   "label": "ARIPOV TOTAL (UZS)",
+   "read_only": 1,
+   "bold": 1,
+   "description": "= Internal Transfers + Hamidulla Rasxod"
   },
   {
    "fieldname": "total_distributed_uzs",
@@ -144,12 +250,26 @@
    "options": "Cash Distribution Entry",
    "print_hide": 1,
    "read_only": 1
+  },
+  {
+   "fieldname": "total_received_usd",
+   "fieldtype": "Currency",
+   "hidden": 1,
+   "label": "Total Received (USD)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_received_uzs",
+   "fieldtype": "Currency",
+   "hidden": 1,
+   "label": "Total Received (UZS)",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-12-02 12:00:00.000000",
+ "modified": "2026-01-29 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "akfa_accounting",
  "name": "Cash Distribution Entry",

@@ -1,0 +1,62 @@
+{
+ "actions": [],
+ "creation": "2026-01-29 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "posting_date",
+  "kassa_rasxod",
+  "column_break_1",
+  "amount_usd",
+  "amount_uzs"
+ ],
+ "fields": [
+  {
+   "fieldname": "posting_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Sana",
+   "read_only": 1
+  },
+  {
+   "fieldname": "kassa_rasxod",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Kassa Rasxod",
+   "options": "Kassa Rasxod",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "amount_usd",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Summa USD",
+   "read_only": 1
+  },
+  {
+   "fieldname": "amount_uzs",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Summa UZS",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-01-29 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "akfa_accounting",
+ "name": "Cash Distribution Rasxod Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

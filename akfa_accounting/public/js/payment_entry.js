@@ -1,5 +1,7 @@
 frappe.ui.form.on('Payment Entry', {
     onload: function (frm) {
+        // TASK 1: Hide "Pay" payment type for "davron kassa" role (per-form instance)
+        filter_payment_type_options(frm);
         // Create a container for recent payments at the end of form
         if (!frm.$recent_payments_container) {
             frm.$recent_payments_container = $('<div class="form-section" style="margin-top: 30px;"></div>');
@@ -31,6 +33,9 @@ frappe.ui.form.on('Payment Entry', {
     },
 
     refresh: function (frm) {
+        // TASK 1: Filter payment type options on every refresh
+        filter_payment_type_options(frm);
+
         if (frm.is_new() && frm.doc.mode_of_payment) {
             load_recent_payments(frm);
         }
@@ -81,6 +86,28 @@ frappe.ui.form.on('Payment Entry', {
         update_exchange_rate_info(frm);
     }
 });
+
+// TASK 1: Filter payment type options based on user role
+function filter_payment_type_options(frm) {
+    // Check if user has "davron kassa" role AND is NOT Administrator
+    if (frappe.user.has_role('davron kassa') && !frappe.user.has_role('Administrator')) {
+        // Wait for field to be fully rendered
+        setTimeout(function() {
+            const field = frm.get_field('payment_type');
+            if (field && field.$input) {
+                // Direct DOM manipulation: Remove "Pay" option from select dropdown
+                field.$input.find('option[value="Pay"]').remove();
+
+                // If current value is "Pay", change it to "Receive"
+                if (frm.doc.payment_type === 'Pay') {
+                    frm.set_value('payment_type', 'Receive');
+                }
+
+                console.log('[TASK 1] "Pay" option hidden for davron kassa role');
+            }
+        }, 100);
+    }
+}
 
 function set_tranzaksiya_turi_visibility(frm) {
     // Tranzaksiya turi mandatory faqat Receive da, qolganida hidden
@@ -136,7 +163,8 @@ function apply_payment_entry_defaults(frm) {
                 if (defaults.paid_from) {
                     frm.set_value('paid_from', defaults.paid_from);
                 }
-                if (defaults.paid_to) {
+                // TASK 2: Don't auto-populate paid_to for Internal Transfer
+                if (defaults.paid_to && frm.doc.payment_type !== 'Internal Transfer') {
                     frm.set_value('paid_to', defaults.paid_to);
                 }
                 if (defaults.party_type) {
@@ -422,7 +450,7 @@ function update_exchange_rate_info(frm) {
     // Show exchange rate info when paid_from and paid_to currencies are different
     const from_currency = frm.doc.paid_from_account_currency;
     const to_currency = frm.doc.paid_to_account_currency;
-    
+
     // If currencies are same or not yet set, clear and return
     if (!from_currency || !to_currency || from_currency === to_currency) {
         frm.set_df_property('custom_exchange_rate_info', 'options', '');
@@ -441,14 +469,14 @@ function update_exchange_rate_info(frm) {
             if (r.message && r.message.usd_to_uzs) {
                 const rates = r.message;
                 const usd_to_uzs = flt(rates.usd_to_uzs);
-                
+
                 // Format rate with thousands separator
                 const formatted_rate = format_number(usd_to_uzs, '#,###.##');
-                
+
                 // Determine direction based on currencies
                 let direction_text = '';
                 let main_rate = '';
-                
+
                 if (from_currency === 'USD' && to_currency === 'UZS') {
                     direction_text = '1 USD = ' + formatted_rate + ' UZS';
                     main_rate = formatted_rate;
@@ -459,11 +487,11 @@ function update_exchange_rate_info(frm) {
                     direction_text = '1 USD = ' + formatted_rate + ' UZS';
                     main_rate = formatted_rate;
                 }
-                
+
                 const html = `
-                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                                padding: 15px 20px; 
-                                border-radius: 8px; 
+                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                                padding: 15px 20px;
+                                border-radius: 8px;
                                 color: white;
                                 margin: 10px 0;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -482,27 +510,27 @@ function update_exchange_rate_info(frm) {
                         </div>
                     </div>
                 `;
-                
+
                 frm.set_df_property('custom_exchange_rate_info', 'options', html);
                 frm.refresh_field('custom_exchange_rate_info');
             } else {
                 // No rate found
                 const html = `
-                    <div style="background: #ffebee; 
-                                padding: 15px 20px; 
-                                border-radius: 8px; 
+                    <div style="background: #ffebee;
+                                padding: 15px 20px;
+                                border-radius: 8px;
                                 color: #c62828;
                                 border: 1px solid #ffcdd2;
                                 margin: 10px 0;">
                         <i class="fa fa-exclamation-triangle"></i>
                         <strong>Kurs topilmadi!</strong><br>
                         <span style="font-size: 12px;">
-                            ${posting_date} sanasi uchun valyuta kursi mavjud emas. 
+                            ${posting_date} sanasi uchun valyuta kursi mavjud emas.
                             Currency Exchange ro'yxatiga kurs qo'shing.
                         </span>
                     </div>
                 `;
-                
+
                 frm.set_df_property('custom_exchange_rate_info', 'options', html);
                 frm.refresh_field('custom_exchange_rate_info');
             }
@@ -513,4 +541,3 @@ function update_exchange_rate_info(frm) {
         }
     });
 }
-

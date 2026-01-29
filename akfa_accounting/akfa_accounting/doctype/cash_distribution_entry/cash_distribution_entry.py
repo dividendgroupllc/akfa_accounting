@@ -418,12 +418,12 @@ def get_cash_distribution_data(posting_date, company):
 		ORDER BY kr.posting_date
 	""", (posting_date, HAMIDULLA_MODES['USD']), as_dict=True)
 
-	# Get UZS Rasxod and convert to USD
+	# Get UZS Rasxod - total_amount is already in USD (converted in Kassa Rasxod)
 	uzs_rasxod = frappe.db.sql("""
 		SELECT
 			kr.name as kassa_rasxod,
 			kr.posting_date,
-			kr.total_amount as original_amount,
+			kr.total_amount as amount_usd,
 			'UZS' as original_currency
 		FROM `tabKassa Rasxod` kr
 		WHERE kr.posting_date = %s
@@ -432,9 +432,8 @@ def get_cash_distribution_data(posting_date, company):
 		ORDER BY kr.posting_date
 	""", (posting_date, HAMIDULLA_MODES['UZS']), as_dict=True)
 
-	# Convert UZS to USD
-	for item in uzs_rasxod:
-		item['amount_usd'] = flt(item['original_amount']) / flt(exchange_rate) if exchange_rate else 0
+	# total_amount is already converted to USD in Kassa Rasxod doctype
+	# No additional conversion needed
 
 	rasxod_items = usd_rasxod + uzs_rasxod
 

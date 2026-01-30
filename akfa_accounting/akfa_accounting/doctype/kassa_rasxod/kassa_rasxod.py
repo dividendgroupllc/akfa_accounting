@@ -38,10 +38,13 @@ class KassaRasxod(Document):
     # ==================== Validation Methods ====================
     
     def _validate_currency_exchange_rate(self):
-        """Validate that currency exchange rate exists for the posting date"""
+        """Validate that currency exchange rate exists for the posting date.
+        If not found for the exact date, use the most recent available rate.
+        """
         if not self.posting_date:
             return
         
+        # First try to get rate for exact posting date
         exchange_rate = frappe.db.get_value(
             "Currency Exchange",
             {
@@ -52,11 +55,31 @@ class KassaRasxod(Document):
             "exchange_rate"
         )
         
+        # If not found, get the most recent rate before or on posting date
+        if not exchange_rate:
+            latest_rate = frappe.db.sql("""
+                SELECT exchange_rate, date
+                FROM `tabCurrency Exchange`
+                WHERE from_currency = 'USD'
+                    AND to_currency = 'UZS'
+                    AND date <= %s
+                ORDER BY date DESC
+                LIMIT 1
+            """, (self.posting_date,), as_dict=True)
+            
+            if latest_rate:
+                exchange_rate = latest_rate[0].exchange_rate
+                frappe.msgprint(
+                    _("Using exchange rate from {0} (rate: {1})").format(
+                        frappe.utils.formatdate(latest_rate[0].date),
+                        exchange_rate
+                    ),
+                    alert=True
+                )
+        
         if not exchange_rate:
             frappe.throw(
-                _("Currency Exchange rate for USD to UZS on {0} not found.").format(
-                    frappe.utils.formatdate(self.posting_date)
-                ),
+                _("No Currency Exchange rate found for USD to UZS. Please add an exchange rate first."),
                 title=_("Exchange Rate Missing")
             )
         

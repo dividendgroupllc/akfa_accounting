@@ -15,6 +15,31 @@ HAMIDULLA_MODES = {
 }
 
 
+def get_exchange_rate_with_fallback(posting_date):
+	"""Get exchange rate for the posting date with fallback to latest available rate"""
+	exchange_rate = frappe.db.get_value(
+		"Currency Exchange",
+		{"from_currency": "USD", "to_currency": "UZS", "date": posting_date},
+		"exchange_rate"
+	)
+	
+	if not exchange_rate:
+		latest_rate = frappe.db.sql("""
+			SELECT exchange_rate
+			FROM `tabCurrency Exchange`
+			WHERE from_currency = 'USD'
+				AND to_currency = 'UZS'
+				AND date <= %s
+			ORDER BY date DESC
+			LIMIT 1
+		""", (posting_date,), as_dict=True)
+		
+		if latest_rate:
+			exchange_rate = latest_rate[0].exchange_rate
+	
+	return flt(exchange_rate) or 1
+
+
 class CashDistributionEntry(Document):
 	def validate(self):
 		self.validate_exchange_rate()
@@ -24,16 +49,40 @@ class CashDistributionEntry(Document):
 		self.validate_difference()
 
 	def validate_exchange_rate(self):
-		"""Check if exchange rate exists for the posting date"""
+		"""Check if exchange rate exists for the posting date.
+		If not found for exact date, use the most recent available rate.
+		"""
 		exchange_rate = frappe.db.get_value(
 			"Currency Exchange",
 			{"from_currency": "USD", "to_currency": "UZS", "date": self.posting_date},
 			"exchange_rate"
 		)
 
+		# If not found, get the most recent rate before or on posting date
+		if not exchange_rate:
+			latest_rate = frappe.db.sql("""
+				SELECT exchange_rate, date
+				FROM `tabCurrency Exchange`
+				WHERE from_currency = 'USD'
+					AND to_currency = 'UZS'
+					AND date <= %s
+				ORDER BY date DESC
+				LIMIT 1
+			""", (self.posting_date,), as_dict=True)
+			
+			if latest_rate:
+				exchange_rate = latest_rate[0].exchange_rate
+				frappe.msgprint(
+					_("Using exchange rate from {0} (rate: {1})").format(
+						frappe.utils.formatdate(latest_rate[0].date),
+						exchange_rate
+					),
+					alert=True
+				)
+
 		if not exchange_rate:
 			frappe.throw(
-				_("Currency Exchange rate not found for USD to UZS on {0}. Please add exchange rate first.").format(self.posting_date)
+				_("No Currency Exchange rate found for USD to UZS. Please add an exchange rate first.")
 			)
 
 	def set_party_currency(self):
@@ -127,174 +176,148 @@ class CashDistributionEntry(Document):
 				)
 
 	def on_submit(self):
-		"""Create Journal Entries and mark Payment Entries as distributed"""
-		self.create_journal_entries()
+		"""Create Journal Entry and mark Kassa Rasxod as distributed"""
+		self.create_distribution_journal_entry()
+		self.mark_kassa_rasxod_as_distributed()
 		self.mark_payment_entries_as_distributed()
 
 	def on_cancel(self):
-		"""Cancel linked Journal Entries and unmark Payment Entries"""
-		self.cancel_journal_entries()
+		"""Cancel linked Journal Entry and unmark distributed items"""
+		self.cancel_distribution_journal_entry()
+		self.unmark_kassa_rasxod()
 		self.unmark_payment_entries()
 
-	def create_journal_entries(self):
-		"""Create separate Journal Entries for USD and UZS distributions"""
-		journal_entries = []
-
+	def create_distribution_journal_entry(self):
+		"""Create a single Journal Entry for all distributions.
+		
+		Logic:
+		- Credit Aripov accounts (1114 USD, 1115 UZS) - money going out
+		- Debit Creditors accounts (2110 USD, 2111 UZS) - supplier debt recorded
+		- Creditors account selected based on supplier's currency (party_currency)
+		"""
+		if not self.distribution_details:
+			return
+		
+		# Get exchange rate (with fallback to latest)
+		exchange_rate = get_exchange_rate_with_fallback(self.posting_date)
+		
 		company_currency = frappe.db.get_value("Company", self.company, "default_currency")
-
-		exchange_rate = frappe.db.get_value(
-			"Currency Exchange",
-			{"from_currency": "USD", "to_currency": "UZS", "date": self.posting_date},
-			"exchange_rate"
-		) or 1
-
-		for currency in ["USD", "UZS"]:
-			currency_items = [item for item in self.distribution_details if item.currency == currency and flt(item.amount) > 0]
-
-			if not currency_items:
+		
+		# Get Aripov accounts
+		aripov_usd_account = frappe.db.get_value(
+			"Account", {"account_number": "1114", "company": self.company}, "name"
+		)
+		aripov_uzs_account = frappe.db.get_value(
+			"Account", {"account_number": "1115", "company": self.company}, "name"
+		)
+		
+		# Calculate totals by payment currency
+		total_usd_distributed = sum(
+			flt(item.amount) for item in self.distribution_details if item.currency == "USD"
+		)
+		total_uzs_distributed = sum(
+			flt(item.amount) for item in self.distribution_details if item.currency == "UZS"
+		)
+		
+		if total_usd_distributed == 0 and total_uzs_distributed == 0:
+			return
+		
+		# Create Journal Entry
+		je = frappe.new_doc("Journal Entry")
+		je.voucher_type = "Journal Entry"
+		je.posting_date = self.posting_date
+		je.company = self.company
+		je.multi_currency = 1
+		je.user_remark = _("Cash Distribution Entry: {0}").format(self.name)
+		
+		# Calculate exchange rates for JE
+		usd_exchange_rate = flt(exchange_rate) if company_currency == "UZS" else 1
+		uzs_exchange_rate = 1 if company_currency == "UZS" else (1 / flt(exchange_rate) if exchange_rate else 1)
+		
+		# Row 1: Credit Aripov USD account (money going out)
+		if total_usd_distributed > 0 and aripov_usd_account:
+			je.append("accounts", {
+				"account": aripov_usd_account,
+				"account_currency": "USD",
+				"exchange_rate": usd_exchange_rate,
+				"debit_in_account_currency": 0,
+				"credit_in_account_currency": total_usd_distributed,
+			})
+		
+		# Row 2: Credit Aripov UZS account (money going out)
+		if total_uzs_distributed > 0 and aripov_uzs_account:
+			je.append("accounts", {
+				"account": aripov_uzs_account,
+				"account_currency": "UZS",
+				"exchange_rate": uzs_exchange_rate,
+				"debit_in_account_currency": 0,
+				"credit_in_account_currency": total_uzs_distributed,
+			})
+		
+		# Group distributions by supplier and party_currency
+		# Key: (supplier, party_currency, payment_currency)
+		supplier_groups = {}
+		for item in self.distribution_details:
+			if flt(item.amount) <= 0:
 				continue
-
-			total_amount = sum(flt(item.amount) for item in currency_items)
-			investor = "Ofis GL USD" if currency == "USD" else "Ofis GL UZS"
-
-			aripov_account_number = "1114" if currency == "USD" else "1115"
-			aripov_account = frappe.db.get_value(
-				"Account",
-				{"account_number": aripov_account_number, "company": self.company},
-				"name"
-			)
-
-			creditors_account_number = "2110" if currency == "USD" else "2111"
+			key = (item.supplier, item.party_currency or item.currency, item.currency)
+			if key not in supplier_groups:
+				supplier_groups[key] = 0
+			supplier_groups[key] += flt(item.amount)
+		
+		# Rows 3+: Debit Creditors accounts for each supplier
+		for (supplier, party_currency, payment_currency), amount in supplier_groups.items():
+			# Determine creditors account based on supplier's currency
+			creditors_account_number = "2110" if party_currency == "USD" else "2111"
 			creditors_account = frappe.db.get_value(
-				"Account",
-				{"account_number": creditors_account_number, "company": self.company},
-				"name"
+				"Account", {"account_number": creditors_account_number, "company": self.company}, "name"
 			)
-
-			if not aripov_account:
-				frappe.throw(_("Aripov Kassa Account ({0}) not found for {1}").format(aripov_account_number, currency))
+			
 			if not creditors_account:
-				frappe.throw(_("Creditors Account ({0}) not found for {1}").format(creditors_account_number, currency))
-
-			supplier_data = {}
-			for item in currency_items:
-				if item.supplier not in supplier_data:
-					supplier_data[item.supplier] = {
-						"amount": 0,
-						"party_currency": item.party_currency or currency
-					}
-				supplier_data[item.supplier]["amount"] += flt(item.amount)
-
-			je = frappe.new_doc("Journal Entry")
-			je.voucher_type = "Journal Entry"
-			je.posting_date = self.posting_date
-			je.company = self.company
-			je.multi_currency = 1
-			je.user_remark = _("Cash Distribution Entry: {0} ({1})").format(self.name, currency)
-
-			if currency == company_currency:
-				currency_exchange_rate = 1
-			elif currency == "USD" and company_currency == "UZS":
-				currency_exchange_rate = flt(exchange_rate)
-			elif currency == "UZS" and company_currency == "USD":
-				currency_exchange_rate = 1 / flt(exchange_rate) if exchange_rate else 1
+				frappe.throw(_("Creditors Account ({0}) not found").format(creditors_account_number))
+			
+			# Convert amount if payment currency differs from supplier currency
+			if payment_currency != party_currency:
+				if payment_currency == "UZS" and party_currency == "USD":
+					# Pay in UZS, supplier is USD → convert UZS to USD
+					amount_in_party_currency = flt(amount) / flt(exchange_rate)
+				elif payment_currency == "USD" and party_currency == "UZS":
+					# Pay in USD, supplier is UZS → convert USD to UZS
+					amount_in_party_currency = flt(amount) * flt(exchange_rate)
+				else:
+					amount_in_party_currency = amount
 			else:
-				currency_exchange_rate = 1
-
-			# Row 1: Investor gives money
+				amount_in_party_currency = amount
+			
+			# Calculate exchange rate for this entry
+			if party_currency == company_currency:
+				party_exchange_rate = 1
+			elif party_currency == "USD" and company_currency == "UZS":
+				party_exchange_rate = flt(exchange_rate)
+			elif party_currency == "UZS" and company_currency == "USD":
+				party_exchange_rate = 1 / flt(exchange_rate) if exchange_rate else 1
+			else:
+				party_exchange_rate = 1
+			
 			je.append("accounts", {
 				"account": creditors_account,
 				"party_type": "Supplier",
-				"party": investor,
-				"account_currency": currency,
-				"exchange_rate": currency_exchange_rate,
-				"debit_in_account_currency": 0,
-				"credit_in_account_currency": total_amount,
-			})
-
-			# Row 2: Money enters Aripov Kassa
-			je.append("accounts", {
-				"account": aripov_account,
-				"account_currency": currency,
-				"exchange_rate": currency_exchange_rate,
-				"debit_in_account_currency": total_amount,
+				"party": supplier,
+				"account_currency": party_currency,
+				"exchange_rate": party_exchange_rate,
+				"debit_in_account_currency": amount_in_party_currency,
 				"credit_in_account_currency": 0,
 			})
+		
+		je.insert()
+		je.submit()
+		
+		# Save JE reference
+		frappe.db.set_value("Cash Distribution Entry", self.name, "journal_entry", je.name)
+		frappe.msgprint(_("Journal Entry created: {0}").format(je.name))
 
-			# Row 3+: Each supplier gets debt
-			for supplier, data in supplier_data.items():
-				amount = data["amount"]
-				party_currency = data["party_currency"]
-
-				supplier_creditors_account_number = "2110" if party_currency == "USD" else "2111"
-				supplier_creditors_account = frappe.db.get_value(
-					"Account",
-					{"account_number": supplier_creditors_account_number, "company": self.company},
-					"name"
-				)
-
-				if not supplier_creditors_account:
-					frappe.throw(_("Creditors Account ({0}) not found for {1}").format(supplier_creditors_account_number, party_currency))
-
-				if currency != party_currency:
-					if currency == "UZS" and party_currency == "USD":
-						amount_in_party_currency = flt(amount) / flt(exchange_rate)
-						party_exchange_rate = flt(exchange_rate) if company_currency == "UZS" else 1
-					elif currency == "USD" and party_currency == "UZS":
-						amount_in_party_currency = flt(amount) * flt(exchange_rate)
-						party_exchange_rate = 1 / flt(exchange_rate) if company_currency == "USD" and exchange_rate else 1
-					else:
-						amount_in_party_currency = amount
-						party_exchange_rate = 1
-
-					je.append("accounts", {
-						"account": supplier_creditors_account,
-						"party_type": "Supplier",
-						"party": supplier,
-						"account_currency": party_currency,
-						"exchange_rate": party_exchange_rate,
-						"debit_in_account_currency": amount_in_party_currency,
-						"credit_in_account_currency": 0,
-					})
-				else:
-					if party_currency == company_currency:
-						party_exchange_rate = 1
-					elif party_currency == "USD" and company_currency == "UZS":
-						party_exchange_rate = flt(exchange_rate)
-					elif party_currency == "UZS" and company_currency == "USD":
-						party_exchange_rate = 1 / flt(exchange_rate) if exchange_rate else 1
-					else:
-						party_exchange_rate = 1
-
-					je.append("accounts", {
-						"account": supplier_creditors_account,
-						"party_type": "Supplier",
-						"party": supplier,
-						"account_currency": party_currency,
-						"exchange_rate": party_exchange_rate,
-						"debit_in_account_currency": amount,
-						"credit_in_account_currency": 0,
-					})
-
-			# Last Row: Money leaves Aripov Kassa
-			je.append("accounts", {
-				"account": aripov_account,
-				"account_currency": currency,
-				"exchange_rate": currency_exchange_rate,
-				"debit_in_account_currency": 0,
-				"credit_in_account_currency": total_amount,
-			})
-
-			je.insert()
-			je.submit()
-			journal_entries.append(je.name)
-
-		if journal_entries:
-			frappe.db.set_value("Cash Distribution Entry", self.name, "journal_entry", ", ".join(journal_entries))
-			frappe.msgprint(_("Journal Entries created: {0}").format(", ".join(journal_entries)))
-
-	def cancel_journal_entries(self):
-		"""Cancel all linked Journal Entries"""
+	def cancel_distribution_journal_entry(self):
+		"""Cancel linked Journal Entry"""
 		je_names = frappe.db.get_value("Cash Distribution Entry", self.name, "journal_entry")
 		if je_names:
 			for je_name in je_names.split(", "):
@@ -304,6 +327,18 @@ class CashDistributionEntry(Document):
 					if je.docstatus == 1:
 						je.cancel()
 			frappe.msgprint(_("Journal Entries cancelled"))
+
+	def mark_kassa_rasxod_as_distributed(self):
+		"""Mark Hamidulla Rasxod entries as distributed"""
+		for item in self.rasxod_items:
+			if item.kassa_rasxod:
+				frappe.db.set_value("Kassa Rasxod", item.kassa_rasxod, "custom_is_distributed", 1)
+
+	def unmark_kassa_rasxod(self):
+		"""Unmark Kassa Rasxod when cancelled"""
+		for item in self.rasxod_items:
+			if item.kassa_rasxod:
+				frappe.db.set_value("Kassa Rasxod", item.kassa_rasxod, "custom_is_distributed", 0)
 
 	def mark_payment_entries_as_distributed(self):
 		"""Mark Internal Transfer Payment Entries as distributed"""
@@ -345,12 +380,8 @@ def get_cash_distribution_data(posting_date, company):
 	and converts Hamidulla UZS expenses to USD.
 	"""
 
-	# Get exchange rate for UZS → USD conversion
-	exchange_rate = frappe.db.get_value(
-		"Currency Exchange",
-		{"from_currency": "USD", "to_currency": "UZS", "date": posting_date},
-		"exchange_rate"
-	) or 1
+	# Get exchange rate for UZS → USD conversion (with fallback to latest)
+	exchange_rate = get_exchange_rate_with_fallback(posting_date)
 
 	# 1. Get Davron Tushumlari (Reference)
 	davron_accounts = get_accounts_by_numbers(DAVRON_ACCOUNTS, company)
@@ -415,6 +446,7 @@ def get_cash_distribution_data(posting_date, company):
 		WHERE kr.posting_date = %s
 			AND kr.mode_of_payment = %s
 			AND kr.docstatus = 1
+			AND IFNULL(kr.custom_is_distributed, 0) = 0
 		ORDER BY kr.posting_date
 	""", (posting_date, HAMIDULLA_MODES['USD']), as_dict=True)
 
@@ -429,6 +461,7 @@ def get_cash_distribution_data(posting_date, company):
 		WHERE kr.posting_date = %s
 			AND kr.mode_of_payment = %s
 			AND kr.docstatus = 1
+			AND IFNULL(kr.custom_is_distributed, 0) = 0
 		ORDER BY kr.posting_date
 	""", (posting_date, HAMIDULLA_MODES['UZS']), as_dict=True)
 

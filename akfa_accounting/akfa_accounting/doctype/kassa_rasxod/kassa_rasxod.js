@@ -1,26 +1,26 @@
 frappe.ui.form.on('Kassa Rasxod', {
-	onload: function(frm) {
+	onload: function (frm) {
 		if (!frm.doc.currency_exchange_rate) {
 			get_exchange_rate(frm);
 		}
 		load_custom_table(frm);
 	},
 
-	refresh: function(frm) {
+	refresh: function (frm) {
 		load_custom_table(frm);
 	},
 
-	posting_date: function(frm) {
+	posting_date: function (frm) {
 		get_exchange_rate(frm);
 	},
 
-	mode_of_payment: function(frm) {
+	mode_of_payment: function (frm) {
 		get_exchange_rate(frm);
 		get_account_balance(frm);
 		refresh_custom_table(frm);
 	},
 
-	currency_exchange_rate: function(frm) {
+	currency_exchange_rate: function (frm) {
 		recalculate_all_amounts(frm);
 	}
 });
@@ -50,7 +50,7 @@ function load_custom_table(frm) {
 	if (frm.doc.items_data) {
 		try {
 			items_data = JSON.parse(frm.doc.items_data);
-		} catch(e) {
+		} catch (e) {
 			items_data = [];
 		}
 	} else {
@@ -200,7 +200,7 @@ function render_custom_table(frm) {
 	});
 
 	// Add row button
-	container.find('.btn-add-row').on('click', function() {
+	container.find('.btn-add-row').on('click', function () {
 		let new_item = {
 			izoh: '',
 			podrazdilenie: '',
@@ -234,7 +234,7 @@ function add_table_row(frm, idx, item) {
 	let is_podochot_rasxod = tip === TIP_PODOCHOT_RASXOD;
 	let is_koplashga = tip === TIP_KOPLASHGA;
 	let is_podochot_type = is_podochot_prixod || is_podochot_rasxod;
-	
+
 	let mode_selected = frm.doc.mode_of_payment ? true : false;
 	let usd_mode = is_usd_mode(frm);
 	let transfer_mode = is_uzs_transfer_mode(frm);
@@ -272,7 +272,7 @@ function add_table_row(frm, idx, item) {
 				<option value="">-</option>
 			</select>
 		</td>`;
-		
+
 		// Add Summa field for Rasxod after Tip 1
 		if (usd_mode) {
 			row_html += `
@@ -285,7 +285,7 @@ function add_table_row(frm, idx, item) {
 				<input type="number" class="item-paid-amount-uzs" value="${item.paid_amount_uzs || 0}" step="0.01">
 			</td>`;
 		}
-		
+
 		row_html += `
 		<td>
 			<select class="item-party-type">
@@ -323,7 +323,7 @@ function add_table_row(frm, idx, item) {
 				<option value="">-</option>
 			</select>
 		</td>`;
-		
+
 		// Add Summa field for Podochot types
 		if (usd_mode) {
 			row_html += `
@@ -336,7 +336,7 @@ function add_table_row(frm, idx, item) {
 				<input type="number" class="item-paid-amount-uzs" value="${item.paid_amount_uzs || 0}" step="0.01">
 			</td>`;
 		}
-		
+
 		// Upload file for Podochot
 		row_html += `
 		<td>
@@ -362,7 +362,7 @@ function add_table_row(frm, idx, item) {
 				<option value="">-</option>
 			</select>
 		</td>`;
-		
+
 		// Add Summa field for Koplashga
 		if (usd_mode) {
 			row_html += `
@@ -375,7 +375,7 @@ function add_table_row(frm, idx, item) {
 				<input type="number" class="item-paid-amount-uzs" value="${item.paid_amount_uzs || 0}" step="0.01">
 			</td>`;
 		}
-		
+
 		// Add Party Type 2 and Party 2 for Koplashga AFTER summa
 		row_html += `
 		<td>
@@ -441,16 +441,16 @@ function add_table_row(frm, idx, item) {
 
 function update_table_header(frm, tip) {
 	let $header = frm.fields_dict.custom_items_html.$wrapper.find('#table-header');
-	
+
 	// Remove old dynamic columns
 	$header.find('.dynamic-col').remove();
-	
+
 	let mode_selected = frm.doc.mode_of_payment ? true : false;
 	let usd_mode = is_usd_mode(frm);
 	let summa_label = usd_mode ? 'Сумма USD' : 'Сумма UZS';
 
 	let header_html = '';
-	
+
 	if (tip === TIP_RASXOD) {
 		// Расход: Cost Center, Tip 1, Summa, Party Type, Party, Date, File
 		header_html = `
@@ -489,22 +489,22 @@ function update_table_header(frm, tip) {
 
 	// Add delete column
 	header_html += `<th class="dynamic-col" style="width: 40px;"></th>`;
-	
+
 	$header.append(header_html);
 }
 
 function setup_row_handlers(frm, $row, idx) {
-	$row.find('.item-izoh').on('change', function() {
+	$row.find('.item-izoh').on('change', function () {
 		items_data[idx].izoh = $(this).val();
 		save_items_data(frm);
 	});
 
-	$row.find('.item-podrazdilenie').on('change', function() {
+	$row.find('.item-podrazdilenie').on('change', function () {
 		items_data[idx].podrazdilenie = $(this).val();
 		save_items_data(frm);
 	});
 
-	$row.find('.item-rasxod-podochot').on('change', function() {
+	$row.find('.item-rasxod-podochot').on('change', function () {
 		items_data[idx].rasxod_podochot = $(this).val();
 		// Clear conditional fields
 		items_data[idx].cost_center = '';
@@ -521,7 +521,7 @@ function setup_row_handlers(frm, $row, idx) {
 		refresh_custom_table(frm);
 	});
 
-	$row.find('.item-cost-center').on('change', function() {
+	$row.find('.item-cost-center').on('change', function () {
 		let cost_center = $(this).val();
 		items_data[idx].cost_center = cost_center;
 		items_data[idx].category = '';
@@ -533,7 +533,7 @@ function setup_row_handlers(frm, $row, idx) {
 		}
 	});
 
-	$row.find('.item-category').on('change', function() {
+	$row.find('.item-category').on('change', function () {
 		items_data[idx].category = $(this).val();
 		save_items_data(frm);
 
@@ -542,12 +542,12 @@ function setup_row_handlers(frm, $row, idx) {
 		}
 	});
 
-	$row.find('.item-employee-group').on('change', function() {
+	$row.find('.item-employee-group').on('change', function () {
 		let employee_group = $(this).val();
 		items_data[idx].employee_group = employee_group;
 		items_data[idx].employee = '';
 		save_items_data(frm);
-		
+
 		if (employee_group) {
 			load_employee_options($row, employee_group, '');
 		} else {
@@ -555,12 +555,12 @@ function setup_row_handlers(frm, $row, idx) {
 		}
 	});
 
-	$row.find('.item-employee').on('change', function() {
+	$row.find('.item-employee').on('change', function () {
 		items_data[idx].employee = $(this).val();
 		save_items_data(frm);
 	});
 
-	$row.find('.item-paid-amount-uzs').on('change', function() {
+	$row.find('.item-paid-amount-uzs').on('change', function () {
 		let uzs = parseFloat($(this).val()) || 0;
 		items_data[idx].paid_amount_uzs = uzs;
 
@@ -571,18 +571,18 @@ function setup_row_handlers(frm, $row, idx) {
 		save_items_data(frm);
 	});
 
-	$row.find('.item-paid-amount-usd').on('change', function() {
+	$row.find('.item-paid-amount-usd').on('change', function () {
 		let usd = parseFloat($(this).val()) || 0;
 		items_data[idx].paid_amount_usd = usd;
 		save_items_data(frm);
 	});
 
-	$row.find('.item-party-type').on('change', function() {
+	$row.find('.item-party-type').on('change', function () {
 		let party_type = $(this).val();
 		items_data[idx].party_type = party_type;
 		items_data[idx].party = '';
 		save_items_data(frm);
-		
+
 		if (party_type) {
 			load_party_options($row, '.item-party', party_type, '');
 		} else {
@@ -590,18 +590,18 @@ function setup_row_handlers(frm, $row, idx) {
 		}
 	});
 
-	$row.find('.item-party').on('change', function() {
+	$row.find('.item-party').on('change', function () {
 		items_data[idx].party = $(this).val();
 		save_items_data(frm);
 	});
 
 	// Party Type 2 and Party 2 for Koplashga
-	$row.find('.item-party-type-2').on('change', function() {
+	$row.find('.item-party-type-2').on('change', function () {
 		let party_type = $(this).val();
 		items_data[idx].party_type_2 = party_type;
 		items_data[idx].party_2 = '';
 		save_items_data(frm);
-		
+
 		if (party_type) {
 			load_party_options($row, '.item-party-2', party_type, '');
 		} else {
@@ -609,17 +609,17 @@ function setup_row_handlers(frm, $row, idx) {
 		}
 	});
 
-	$row.find('.item-party-2').on('change', function() {
+	$row.find('.item-party-2').on('change', function () {
 		items_data[idx].party_2 = $(this).val();
 		save_items_data(frm);
 	});
 
-	$row.find('.item-date').on('change', function() {
+	$row.find('.item-date').on('change', function () {
 		items_data[idx].date = $(this).val();
 		save_items_data(frm);
 	});
 
-	$row.find('.btn-delete-row').on('click', function() {
+	$row.find('.btn-delete-row').on('click', function () {
 		if (confirm('Delete this row?')) {
 			items_data.splice(idx, 1);
 			save_items_data(frm);
@@ -628,10 +628,10 @@ function setup_row_handlers(frm, $row, idx) {
 	});
 
 	// Upload file handler
-	$row.find('.item-upload-btn').on('click', function() {
+	$row.find('.item-upload-btn').on('click', function () {
 		let $btn = $(this);
 		let existing_file = $btn.data('file');
-		
+
 		if (existing_file) {
 			// Show options: view or remove
 			frappe.msgprint({
@@ -640,13 +640,13 @@ function setup_row_handlers(frm, $row, idx) {
 					<button class="btn btn-danger btn-sm remove-file-btn">${__('Remove File')}</button>`,
 				primary_action: {
 					label: __('Close'),
-					action: function() {
+					action: function () {
 						frappe.msg_dialog.hide();
 					}
 				}
 			});
-			
-			$(document).on('click', '.remove-file-btn', function() {
+
+			$(document).on('click', '.remove-file-btn', function () {
 				items_data[idx].upload_file = '';
 				$btn.data('file', '');
 				$btn.find('i').removeClass('fa-file').addClass('fa-upload');
@@ -658,24 +658,24 @@ function setup_row_handlers(frm, $row, idx) {
 		}
 	});
 
-	$row.find('.item-upload-file').on('change', function(e) {
+	$row.find('.item-upload-file').on('change', function (e) {
 		let file = e.target.files[0];
 		if (file) {
 			// Upload file using Frappe
 			let $btn = $row.find('.item-upload-btn');
-			
+
 			frappe.upload_handler({
 				files: [file],
 				doctype: frm.doctype,
 				docname: frm.docname || 'New ' + frm.doctype,
 				folder: 'Home/Attachments',
 				is_private: 1,
-				callback: function(attachment) {
+				callback: function (attachment) {
 					items_data[idx].upload_file = attachment.file_url;
 					$btn.data('file', attachment.file_url);
 					$btn.find('i').removeClass('fa-upload').addClass('fa-file');
 					save_items_data(frm);
-					frappe.show_alert({message: __('File uploaded successfully'), indicator: 'green'});
+					frappe.show_alert({ message: __('File uploaded successfully'), indicator: 'green' });
 				}
 			});
 		}
@@ -695,12 +695,12 @@ function load_podrazdelenie_options($row, selected_value) {
 			fields: ['name', 'podrazdelenie_name'],
 			limit_page_length: 0
 		},
-		callback: function(r) {
+		callback: function (r) {
 			if (r.message) {
 				let $select = $row.find('.item-podrazdilenie');
 				$select.empty();
 				$select.append('<option value="">-</option>');
-				r.message.forEach(function(item) {
+				r.message.forEach(function (item) {
 					let display = item.podrazdelenie_name || item.name;
 					let selected = item.name === selected_value ? 'selected' : '';
 					$select.append(`<option value="${item.name}" ${selected}>${display}</option>`);
@@ -719,12 +719,12 @@ function load_cost_center_options($row, selected_value) {
 			fields: ['name', 'cost_center'],
 			limit_page_length: 0
 		},
-		callback: function(r) {
+		callback: function (r) {
 			if (r.message) {
 				let $select = $row.find('.item-cost-center');
 				$select.empty();
 				$select.append('<option value="">-</option>');
-				r.message.forEach(function(item) {
+				r.message.forEach(function (item) {
 					let selected = item.name === selected_value ? 'selected' : '';
 					$select.append(`<option value="${item.name}" ${selected}>${item.name}</option>`);
 				});
@@ -742,12 +742,12 @@ function load_employee_group_options($row, selected_value) {
 			fields: ['name'],
 			limit_page_length: 0
 		},
-		callback: function(r) {
+		callback: function (r) {
 			if (r.message) {
 				let $select = $row.find('.item-employee-group');
 				$select.empty();
 				$select.append('<option value="">-</option>');
-				r.message.forEach(function(item) {
+				r.message.forEach(function (item) {
 					let selected = item.name === selected_value ? 'selected' : '';
 					$select.append(`<option value="${item.name}" ${selected}>${item.name}</option>`);
 				});
@@ -763,12 +763,12 @@ function load_employee_options($row, employee_group, selected_value) {
 		args: {
 			employee_group: employee_group
 		},
-		callback: function(r) {
+		callback: function (r) {
 			let $select = $row.find('.item-employee');
 			$select.empty();
 			$select.append('<option value="">-</option>');
 			if (r.message && r.message.length > 0) {
-				r.message.forEach(function(item) {
+				r.message.forEach(function (item) {
 					let display = item.employee_name ? `${item.employee} - ${item.employee_name}` : item.employee;
 					let selected = item.employee === selected_value ? 'selected' : '';
 					$select.append(`<option value="${item.employee}" ${selected}>${display}</option>`);
@@ -787,12 +787,12 @@ function load_party_options($row, selector, party_type, selected_value) {
 			fields: ['name'],
 			limit_page_length: 0
 		},
-		callback: function(r) {
+		callback: function (r) {
 			if (r.message) {
 				let $select = $row.find(selector);
 				$select.empty();
 				$select.append('<option value="">-</option>');
-				r.message.forEach(function(item) {
+				r.message.forEach(function (item) {
 					let selected = item.name === selected_value ? 'selected' : '';
 					$select.append(`<option value="${item.name}" ${selected}>${item.name}</option>`);
 				});
@@ -808,13 +808,13 @@ function load_categories($row, cost_center, selected_category) {
 			doctype: 'Custom Cost Center',
 			name: cost_center
 		},
-		callback: function(r) {
+		callback: function (r) {
 			if (r.message && r.message.categories) {
 				let $select = $row.find('.item-category');
 				$select.empty();
 				$select.append('<option value="">-</option>');
 
-				r.message.categories.forEach(function(cat) {
+				r.message.categories.forEach(function (cat) {
 					let selected = cat.category_name === selected_category ? 'selected' : '';
 					$select.append(`<option value="${cat.category_name}" ${selected}>${cat.category_name}</option>`);
 				});
@@ -830,7 +830,7 @@ function get_talli_type(cost_center, category, idx) {
 			doctype: 'Custom Cost Center',
 			name: cost_center
 		},
-		callback: function(r) {
+		callback: function (r) {
 			if (r.message && r.message.categories) {
 				let cat = r.message.categories.find(d => d.category_name === category);
 				if (cat && cat.talli_type) {
@@ -844,7 +844,7 @@ function get_talli_type(cost_center, category, idx) {
 function recalculate_all_amounts(frm) {
 	// Only recalculate when in UZS mode
 	if (!is_usd_mode(frm) && frm.doc.currency_exchange_rate) {
-		items_data.forEach(function(item) {
+		items_data.forEach(function (item) {
 			if (item.paid_amount_uzs) {
 				item.paid_amount_usd = item.paid_amount_uzs / frm.doc.currency_exchange_rate;
 			}
@@ -870,17 +870,42 @@ function get_exchange_rate(frm) {
 			},
 			fieldname: 'exchange_rate'
 		},
-		callback: function(r) {
+		callback: function (r) {
 			if (r.message && r.message.exchange_rate) {
 				frm.set_value('currency_exchange_rate', r.message.exchange_rate);
 			} else {
-				frappe.msgprint({
-					title: __('Exchange Rate Missing'),
-					indicator: 'red',
-					message: __('Currency Exchange rate for USD to UZS on {0} not found.',
-						[frappe.datetime.str_to_user(frm.doc.posting_date)])
+				// If no rate for exact date, get the most recent rate
+				frappe.call({
+					method: 'frappe.client.get_list',
+					args: {
+						doctype: 'Currency Exchange',
+						filters: [
+							['from_currency', '=', 'USD'],
+							['to_currency', '=', 'UZS'],
+							['date', '<=', frm.doc.posting_date]
+						],
+						fields: ['exchange_rate', 'date'],
+						order_by: 'date desc',
+						limit_page_length: 1
+					},
+					callback: function (res) {
+						if (res.message && res.message.length > 0) {
+							let rate = res.message[0];
+							frm.set_value('currency_exchange_rate', rate.exchange_rate);
+							frappe.show_alert({
+								message: __('Using exchange rate from {0}', [frappe.datetime.str_to_user(rate.date)]),
+								indicator: 'blue'
+							});
+						} else {
+							frappe.msgprint({
+								title: __('Exchange Rate Missing'),
+								indicator: 'red',
+								message: __('No Currency Exchange rate found for USD to UZS. Please add an exchange rate first.')
+							});
+							frm.set_value('currency_exchange_rate', 0);
+						}
+					}
 				});
-				frm.set_value('currency_exchange_rate', 0);
 			}
 		}
 	});
@@ -898,7 +923,7 @@ function get_account_balance(frm) {
 			mode_of_payment: frm.doc.mode_of_payment,
 			posting_date: frm.doc.posting_date
 		},
-		callback: function(r) {
+		callback: function (r) {
 			if (r.message !== undefined) {
 				frm.set_value('balance', r.message);
 				calculate_totals(frm);
@@ -915,7 +940,7 @@ function calculate_totals(frm) {
 	let usd_mode = is_usd_mode(frm);
 	let exchange_rate = frm.doc.currency_exchange_rate || 1;
 
-	items_data.forEach(function(item) {
+	items_data.forEach(function (item) {
 		// Get amount in USD
 		let summa_usd;
 		if (usd_mode) {
@@ -925,7 +950,7 @@ function calculate_totals(frm) {
 			let uzs_amount = item.paid_amount_uzs || 0;
 			summa_usd = uzs_amount / exchange_rate;
 		}
-		
+
 		if (item.rasxod_podochot === TIP_RASXOD) {
 			// Rasxod: add to total if party_type and party are empty
 			if (!item.party_type || !item.party) {
@@ -941,7 +966,7 @@ function calculate_totals(frm) {
 			// Koplashga logic:
 			let has_party1 = item.party_type && item.party;
 			let has_party2 = item.party_type_2 && item.party_2;
-			
+
 			if (has_party1 && has_party2) {
 				// Both parties filled - no effect on balance
 			} else if (has_party1 && !has_party2) {

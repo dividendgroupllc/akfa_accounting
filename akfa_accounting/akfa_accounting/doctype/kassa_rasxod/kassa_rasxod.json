@@ -1,147 +1,156 @@
 {
- "actions": [],
- "allow_rename": 1,
- "autoname": "naming_series:",
- "creation": "2025-12-12 10:00:00.000000",
- "doctype": "DocType",
- "engine": "InnoDB",
- "field_order": [
-  "naming_series",
-  "posting_date",
-  "mode_of_payment",
-  "currency_exchange_rate",
-  "column_break_balance",
-  "balance",
-  "total_amount",
-  "qoldi",
-  "section_break_1",
-  "items_data",
-  "custom_items_html",
-  "amended_from"
- ],
- "fields": [
-  {
-   "fieldname": "naming_series",
-   "fieldtype": "Select",
-   "hidden": 1,
-   "label": "Series",
-   "options": "KR-.YYYY.-",
-   "reqd": 1
-  },
-  {
-   "default": "Today",
-   "fieldname": "posting_date",
-   "fieldtype": "Date",
-   "in_list_view": 1,
-   "label": "Дата",
-   "reqd": 1
-  },
-  {
-   "fieldname": "mode_of_payment",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Оборот",
-   "options": "Mode of Payment",
-   "reqd": 1
-  },
-  {
-   "fieldname": "currency_exchange_rate",
-   "fieldtype": "Float",
-   "label": "Курс",
-   "precision": "2",
-   "read_only": 1,
-   "reqd": 1
-  },
-  {
-   "fieldname": "column_break_balance",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "balance",
-   "fieldtype": "Currency",
-   "label": "Balance",
-   "read_only": 1
-  },
-  {
-   "fieldname": "total_amount",
-   "fieldtype": "Currency",
-   "label": "Total Amount",
-   "read_only": 1
-  },
-  {
-   "fieldname": "qoldi",
-   "fieldtype": "Currency",
-   "label": "Қолди",
-   "read_only": 1
-  },
-  {
-   "fieldname": "section_break_1",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "items_data",
-   "fieldtype": "Long Text",
-   "hidden": 1,
-   "label": "Items Data"
-  },
-  {
-   "fieldname": "custom_items_html",
-   "fieldtype": "HTML",
-   "label": "Items",
-   "options": "<div id='custom-items-table'></div>"
-  },
-  {
-   "fieldname": "amended_from",
-   "fieldtype": "Link",
-   "label": "Amended From",
-   "no_copy": 1,
-   "options": "Kassa Rasxod",
-   "print_hide": 1,
-   "read_only": 1,
-   "search_index": 1
-  }
- ],
- "index_web_pages_for_search": 1,
- "is_submittable": 1,
- "links": [],
- "modified": "2025-12-12 17:00:00.000000",
- "modified_by": "Administrator",
- "module": "Akfa Accounting",
- "name": "Kassa Rasxod",
- "naming_rule": "By \"Naming Series\" field",
- "owner": "Administrator",
- "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "System Manager",
-   "share": 1,
-   "submit": 1,
-   "write": 1
-  },
-  {
-   "amend": 1,
-   "cancel": 1,
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Accounts Manager",
-   "share": 1,
-   "submit": 1,
-   "write": 1
-  }
- ],
- "sort_field": "modified",
- "sort_order": "DESC",
- "states": [],
- "track_changes": 1
+    "actions": [],
+    "allow_rename": 1,
+    "autoname": "naming_series:",
+    "creation": "2025-12-12 10:00:00.000000",
+    "doctype": "DocType",
+    "engine": "InnoDB",
+    "field_order": [
+        "naming_series",
+        "posting_date",
+        "mode_of_payment",
+        "currency_exchange_rate",
+        "column_break_balance",
+        "balance",
+        "total_amount",
+        "qoldi",
+        "section_break_1",
+        "items_data",
+        "custom_items_html",
+        "amended_from",
+        "custom_is_distributed"
+    ],
+    "fields": [
+        {
+            "fieldname": "naming_series",
+            "fieldtype": "Select",
+            "hidden": 1,
+            "label": "Series",
+            "options": "KR-.YYYY.-",
+            "reqd": 1
+        },
+        {
+            "default": "Today",
+            "fieldname": "posting_date",
+            "fieldtype": "Date",
+            "in_list_view": 1,
+            "label": "Дата",
+            "reqd": 1
+        },
+        {
+            "fieldname": "mode_of_payment",
+            "fieldtype": "Link",
+            "in_list_view": 1,
+            "label": "Оборот",
+            "options": "Mode of Payment",
+            "reqd": 1
+        },
+        {
+            "fieldname": "currency_exchange_rate",
+            "fieldtype": "Float",
+            "label": "Курс",
+            "precision": "2",
+            "read_only": 1,
+            "reqd": 1
+        },
+        {
+            "fieldname": "column_break_balance",
+            "fieldtype": "Column Break"
+        },
+        {
+            "fieldname": "balance",
+            "fieldtype": "Currency",
+            "label": "Balance",
+            "read_only": 1
+        },
+        {
+            "fieldname": "total_amount",
+            "fieldtype": "Currency",
+            "label": "Total Amount",
+            "read_only": 1
+        },
+        {
+            "fieldname": "qoldi",
+            "fieldtype": "Currency",
+            "label": "Қолди",
+            "read_only": 1
+        },
+        {
+            "fieldname": "section_break_1",
+            "fieldtype": "Section Break"
+        },
+        {
+            "fieldname": "items_data",
+            "fieldtype": "Long Text",
+            "hidden": 1,
+            "label": "Items Data"
+        },
+        {
+            "fieldname": "custom_items_html",
+            "fieldtype": "HTML",
+            "label": "Items",
+            "options": "<div id='custom-items-table'></div>"
+        },
+        {
+            "fieldname": "amended_from",
+            "fieldtype": "Link",
+            "label": "Amended From",
+            "no_copy": 1,
+            "options": "Kassa Rasxod",
+            "print_hide": 1,
+            "read_only": 1,
+            "search_index": 1
+        },
+        {
+            "default": "0",
+            "fieldname": "custom_is_distributed",
+            "fieldtype": "Check",
+            "hidden": 1,
+            "label": "Is Distributed",
+            "read_only": 1
+        }
+    ],
+    "index_web_pages_for_search": 1,
+    "is_submittable": 1,
+    "links": [],
+    "modified": "2026-01-30 07:35:00.000000",
+    "modified_by": "Administrator",
+    "module": "Akfa Accounting",
+    "name": "Kassa Rasxod",
+    "naming_rule": "By \"Naming Series\" field",
+    "owner": "Administrator",
+    "permissions": [
+        {
+            "create": 1,
+            "delete": 1,
+            "email": 1,
+            "export": 1,
+            "print": 1,
+            "read": 1,
+            "report": 1,
+            "role": "System Manager",
+            "share": 1,
+            "submit": 1,
+            "write": 1
+        },
+        {
+            "amend": 1,
+            "cancel": 1,
+            "create": 1,
+            "delete": 1,
+            "email": 1,
+            "export": 1,
+            "print": 1,
+            "read": 1,
+            "report": 1,
+            "role": "Accounts Manager",
+            "share": 1,
+            "submit": 1,
+            "write": 1
+        }
+    ],
+    "sort_field": "modified",
+    "sort_order": "DESC",
+    "states": [],
+    "track_changes": 1
 }

@@ -11,6 +11,8 @@ frappe.ui.form.on('Payment Entry', {
         // Hide plumbing fields for "Maximum Simplicity"
         frm.set_df_property('naming_series', 'hidden', 1);
         frm.set_df_property('company', 'hidden', 1);
+        frm.set_df_property('cost_center', 'hidden', 1);
+        frm.set_df_property('dimension_col_break', 'hidden', 1);
 
         // Set initial field visibility and requirements based on payment_type
         set_tranzaksiya_turi_visibility(frm);

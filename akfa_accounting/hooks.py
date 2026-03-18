@@ -16,7 +16,7 @@ app_include_js = ["/assets/akfa_accounting/js/pwa_init.js"]
 fixtures = [
 	{
 		"dt": "Custom Field",
-		"filters": [["dt", "in", ["Payment Entry", "Vehicle", "Travel Request", "Employee Advance", "Expense Claim", "Project", "Expense Claim Detail"]]],
+		"filters": [["dt", "in", ["Payment Entry", "Vehicle", "Travel Request", "Employee Advance", "Expense Claim", "Project", "Expense Claim Detail", "Customer"]]],
 	},
 	{
 		"dt": "Property Setter",

@@ -164,9 +164,9 @@ jobs:
           
           cd \${BENCH_PATH}
           
-          # Install dependencies
-          echo "📦 Installing Python dependencies..."
-          bench setup requirements || true
+          # NOTE: bench setup requirements olib tashlandi.
+          # Sabab: har deployda setuptools 82+ o'rnatib, pkg_resources ni buzadi.
+          # Yangi dependency qo'shsangiz, serverda qo'lda: pip install <package>
 
           # Build assets (Live - no downtime)
           echo "🎨 Building frontend assets..."
@@ -187,10 +187,11 @@ jobs:
           FRAPPE_EOF
           
           # Restart services (as root)
+          # nohup + sleep ensures restart happens after SSH disconnects cleanly
           echo "🔄 Restarting services..."
-          supervisorctl restart all
-          systemctl reload nginx || true
-          
+          nohup bash -c 'sleep 2 && supervisorctl restart all && systemctl reload nginx' &>/dev/null &
+          sleep 3
+
           echo "✅ Deployment updated successfully!"
           ENDSSH
 

@@ -16,7 +16,7 @@
    "fieldname": "tranzaksiya_turi",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Tranzaksiya Turi",
+   "label": "Тип транзакции",
    "read_only": 1
   },
   {

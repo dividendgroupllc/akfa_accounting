@@ -40,7 +40,7 @@ def get_columns(filters):
             "width": 100
         },
         {
-            "label": _("Tranzaksiya Turi"),
+            "label": _("Тип транзакции"),
             "fieldname": "tranzaksiya_turi",
             "fieldtype": "Data",
             "width": 150

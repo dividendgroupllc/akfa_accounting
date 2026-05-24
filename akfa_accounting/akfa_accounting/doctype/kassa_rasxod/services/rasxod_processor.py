@@ -40,7 +40,7 @@ class RasxodProcessor(NachislenieMixin, BaseJECreator):
         if not amount and not usd_amount:
             return
 
-        expense_cost_center = item.get('cost_center') or self.main_cost_center
+        expense_cost_center = self.main_cost_center
         izoh = item.get('izoh', '')
 
         if str(item_date) == str(self.doc.posting_date):

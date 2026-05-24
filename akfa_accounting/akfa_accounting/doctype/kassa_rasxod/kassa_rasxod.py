@@ -142,7 +142,7 @@ class KassaRasxod(Document):
         """Validate Расход type item"""
         if not item.get('cost_center'):
             frappe.throw(
-                _("Row #{0}: Cost Center is required for Расход").format(idx),
+                _("Строка #{0}: Счёт расхода обязателен для Расход").format(idx),
                 title=_("Validation Error")
             )
 
@@ -259,3 +259,25 @@ def get_mode_of_payment_balance(mode_of_payment, posting_date=None):
     from erpnext.accounts.utils import get_balance_on
     
     return get_balance_on(account=account, date=posting_date) or 0
+
+
+@frappe.whitelist()
+def get_child_accounts(parent_account=None, parent_number=None):
+    """Get child accounts of a parent account.
+    Can lookup parent by exact name or by account_number.
+    """
+    if parent_number and not parent_account:
+        parent_account = frappe.db.get_value(
+            "Account", {"account_number": parent_number}, "name"
+        )
+
+    if not parent_account:
+        return []
+
+    return frappe.get_all(
+        "Account",
+        filters={"parent_account": parent_account},
+        fields=["name", "account_name", "account_number", "is_group"],
+        order_by="account_number asc, name asc",
+        limit_page_length=0
+    )

@@ -452,9 +452,9 @@ function update_table_header(frm, tip) {
 	let header_html = '';
 
 	if (tip === TIP_RASXOD) {
-		// Расход: Cost Center, Tip 1, Summa, Party Type, Party, Date, File
+		// Расход: Счёт, Tip 1, Summa, Party Type, Party, Date, File
 		header_html = `
-			<th class="dynamic-col" style="width: 150px;">Cost Center</th>
+			<th class="dynamic-col" style="width: 150px;">Счёт</th>
 			<th class="dynamic-col" style="width: 130px;">Тип 1</th>`;
 		if (mode_selected) {
 			header_html += `<th class="dynamic-col" style="width: 120px;">${summa_label}</th>`;
@@ -536,10 +536,6 @@ function setup_row_handlers(frm, $row, idx) {
 	$row.find('.item-category').on('change', function () {
 		items_data[idx].category = $(this).val();
 		save_items_data(frm);
-
-		if (items_data[idx].cost_center && items_data[idx].category) {
-			get_talli_type(items_data[idx].cost_center, items_data[idx].category, idx);
-		}
 	});
 
 	$row.find('.item-employee-group').on('change', function () {
@@ -710,14 +706,12 @@ function load_podrazdelenie_options($row, selected_value) {
 	});
 }
 
-// Load Custom Cost Center options
+// Load 5200 child accounts as expense group options
 function load_cost_center_options($row, selected_value) {
 	frappe.call({
-		method: 'frappe.client.get_list',
+		method: 'akfa_accounting.akfa_accounting.doctype.kassa_rasxod.kassa_rasxod.get_child_accounts',
 		args: {
-			doctype: 'Custom Cost Center',
-			fields: ['name', 'cost_center'],
-			limit_page_length: 0
+			parent_number: '5200'
 		},
 		callback: function (r) {
 			if (r.message) {
@@ -801,41 +795,22 @@ function load_party_options($row, selector, party_type, selected_value) {
 	});
 }
 
-function load_categories($row, cost_center, selected_category) {
+function load_categories($row, parent_account, selected_category) {
 	frappe.call({
-		method: 'frappe.client.get',
+		method: 'akfa_accounting.akfa_accounting.doctype.kassa_rasxod.kassa_rasxod.get_child_accounts',
 		args: {
-			doctype: 'Custom Cost Center',
-			name: cost_center
+			parent_account: parent_account
 		},
 		callback: function (r) {
-			if (r.message && r.message.categories) {
+			if (r.message) {
 				let $select = $row.find('.item-category');
 				$select.empty();
 				$select.append('<option value="">-</option>');
 
-				r.message.categories.forEach(function (cat) {
-					let selected = cat.category_name === selected_category ? 'selected' : '';
-					$select.append(`<option value="${cat.category_name}" ${selected}>${cat.category_name}</option>`);
+				r.message.forEach(function (acc) {
+					let selected = acc.name === selected_category ? 'selected' : '';
+					$select.append(`<option value="${acc.name}" ${selected}>${acc.name}</option>`);
 				});
-			}
-		}
-	});
-}
-
-function get_talli_type(cost_center, category, idx) {
-	frappe.call({
-		method: 'frappe.client.get',
-		args: {
-			doctype: 'Custom Cost Center',
-			name: cost_center
-		},
-		callback: function (r) {
-			if (r.message && r.message.categories) {
-				let cat = r.message.categories.find(d => d.category_name === category);
-				if (cat && cat.talli_type) {
-					items_data[idx].talli_type = cat.talli_type;
-				}
 			}
 		}
 	});

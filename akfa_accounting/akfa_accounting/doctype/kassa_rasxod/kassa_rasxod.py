@@ -86,28 +86,29 @@ class KassaRasxod(Document):
         self.currency_exchange_rate = exchange_rate
     
     def _calculate_item_amounts(self):
-        """Calculate USD/UZS amounts based on mode of payment"""
+        """Calculate USD/UZS amounts using per-row exchange rate (fallback to doc rate)"""
         if not self.mode_of_payment or not self.currency_exchange_rate or not self.items_data:
             return
-        
+
         try:
             items = json.loads(self.items_data)
         except (json.JSONDecodeError, TypeError):
             return
-        
-        # USD mode - only Наличный USD H
+
         is_usd_mode = self.mode_of_payment == "Наличный USD H"
-        
+
         for item in items:
+            # Backfill per-row rate from doc rate if missing
+            row_rate = item.get('currency_exchange_rate') or self.currency_exchange_rate
+            item['currency_exchange_rate'] = row_rate
+
             if is_usd_mode:
-                # USD mode - paid_amount_usd is entered directly, calculate UZS
                 if item.get('paid_amount_usd'):
-                    item['paid_amount_uzs'] = item['paid_amount_usd'] * self.currency_exchange_rate
+                    item['paid_amount_uzs'] = item['paid_amount_usd'] * row_rate
             else:
-                # UZS mode (Наличный UZS H, Перечисления UZS) - paid_amount_uzs is entered, calculate USD
                 if item.get('paid_amount_uzs'):
-                    item['paid_amount_usd'] = item['paid_amount_uzs'] / self.currency_exchange_rate
-        
+                    item['paid_amount_usd'] = item['paid_amount_uzs'] / row_rate
+
         self.items_data = json.dumps(items)
     
     def _validate_items(self):

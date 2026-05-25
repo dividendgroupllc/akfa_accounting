@@ -21,6 +21,7 @@ class KoplashgaProcessor(BaseJECreator):
 
     def process_koplashga_item(self, item, idx):
         """Process Koplashga item - Transfer between parties via cash"""
+        self._set_item_context(item)
         party_type = item.get('party_type')
         party = item.get('party')
         party_type_2 = item.get('party_type_2')

@@ -26,6 +26,7 @@ class RasxodProcessor(NachislenieMixin, BaseJECreator):
 
     def process_rasxod_item(self, item, idx):
         """Route rasxod item to appropriate handler based on date and party"""
+        self._set_item_context(item)
         item_date = item.get('date')
         party_type = item.get('party_type')
         party = item.get('party')

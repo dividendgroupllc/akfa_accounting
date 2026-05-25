@@ -24,6 +24,7 @@ class PodochotProcessor(BaseJECreator):
         Process Podochot prixod - Employee returns money to cash
         Creates 2-line JE: Debit Cash, Credit Payable with Employee
         """
+        self._set_item_context(item)
         employee = item.get('employee')
         if not employee:
             return
@@ -57,6 +58,7 @@ class PodochotProcessor(BaseJECreator):
         Process Podochot rasxod - Employee receives money from cash
         Creates 2-line JE: Debit Payable with Employee, Credit Cash
         """
+        self._set_item_context(item)
         employee = item.get('employee')
         if not employee:
             return

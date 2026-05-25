@@ -9,6 +9,13 @@ doctype_js = {
 	"Payment Entry": "public/js/payment_entry.js",
 	"Travel Request": "public/js/travel_request.js",
 	"Expense Claim": "public/js/expense_claim.js",
+	"Kassa Rasxod": [
+		"public/js/kassa_rasxod/state.js",
+		"public/js/kassa_rasxod/loaders.js",
+		"public/js/kassa_rasxod/calc.js",
+		"public/js/kassa_rasxod/render.js",
+		"public/js/kassa_rasxod/handlers.js",
+	],
 }
 
 app_include_js = ["/assets/akfa_accounting/js/pwa_init.js"]

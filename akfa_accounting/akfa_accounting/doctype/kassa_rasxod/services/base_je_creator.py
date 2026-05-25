@@ -64,10 +64,18 @@ class BaseJECreator:
         )
 
     def _setup_currency_mode(self):
-        """Determine if multi-currency mode and set exchange rate"""
+        """Determine if multi-currency mode. Per-item rate set via _set_item_context."""
         self.is_multi_currency = self.cash_account_currency == "UZS"
-
+        # Default rate from doc-level; overridden per-item in _set_item_context
         usd_to_uzs_rate = self.doc.currency_exchange_rate or 12020
+        if self.is_multi_currency:
+            self.exchange_rate = 1 / usd_to_uzs_rate
+        else:
+            self.exchange_rate = 1
+
+    def _set_item_context(self, item):
+        """Set exchange_rate from per-item rate. Call at start of each process_*_item."""
+        usd_to_uzs_rate = item.get('currency_exchange_rate') or self.doc.currency_exchange_rate or 12020
         if self.is_multi_currency:
             self.exchange_rate = 1 / usd_to_uzs_rate
         else:

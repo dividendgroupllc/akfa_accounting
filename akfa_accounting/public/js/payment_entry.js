@@ -112,15 +112,6 @@ function filter_payment_type_options(frm) {
 }
 
 function set_tranzaksiya_turi_visibility(frm) {
-    // Tranzaksiya turi mandatory faqat Receive da, qolganida hidden
-    if (frm.doc.payment_type === 'Receive') {
-        frm.set_df_property('custom_tranzaksiya_turi', 'hidden', 0);
-        frm.set_df_property('custom_tranzaksiya_turi', 'reqd', 1);
-    } else {
-        frm.set_df_property('custom_tranzaksiya_turi', 'hidden', 1);
-        frm.set_df_property('custom_tranzaksiya_turi', 'reqd', 0);
-    }
-
     // Default: Unlock Party Type for everyone (reset state)
     frm.set_df_property('party_type', 'read_only', 0);
 

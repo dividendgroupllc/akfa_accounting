@@ -93,8 +93,75 @@ frappe.ui.form.on('Payment Entry', {
     paid_to_account_currency: function(frm) {
         update_exchange_rate_info(frm);
         update_currency_labels(frm);
+    },
+
+    received_amount: function(frm) {
+        // Backward calc: ERPNext only auto-derives received_amount from paid_amount.
+        // When cashier knows the cash side (received) and needs invoice side (paid),
+        // compute paid_amount from received_amount using the same exchange-rate logic.
+        backward_calc_paid_amount(frm);
     }
 });
+
+function backward_calc_paid_amount(frm) {
+    if (frm._akfa_backward_calc_in_progress) return;
+
+    const src_cur = frm.doc.paid_from_account_currency;
+    const dst_cur = frm.doc.paid_to_account_currency;
+    if (!src_cur || !dst_cur || src_cur === dst_cur) return;
+
+    const received = flt(frm.doc.received_amount);
+    if (!received) return;
+
+    let source_rate = flt(frm.doc.source_exchange_rate);
+    let target_rate = flt(frm.doc.target_exchange_rate);
+
+    // ERPNext fallback: missing source rate when reverse Currency Exchange row is absent.
+    // Use the displayed USD<->UZS rate as fallback so cashier-entered values still resolve.
+    const need_fallback = !source_rate || (source_rate === 1 && src_cur !== frappe.boot.sysdefaults.currency);
+    if (need_fallback || !target_rate) {
+        frappe.call({
+            method: 'akfa_accounting.akfa_accounting.api.payment_entry_api.get_daily_exchange_rates',
+            args: { date: frm.doc.posting_date || frappe.datetime.get_today() },
+            callback: function(r) {
+                if (!r.message || !r.message.usd_to_uzs) return;
+                const usd_to_uzs = flt(r.message.usd_to_uzs);
+                apply_backward_calc(frm, received, src_cur, dst_cur, usd_to_uzs);
+            }
+        });
+        return;
+    }
+
+    const company_amount = received * target_rate;
+    const new_paid = company_amount / source_rate;
+    commit_paid_amount(frm, new_paid);
+}
+
+function apply_backward_calc(frm, received, src_cur, dst_cur, usd_to_uzs) {
+    let new_paid = null;
+
+    if (src_cur === 'USD' && dst_cur === 'UZS') {
+        // paid USD -> received UZS. Reverse: paid_USD = received_UZS / rate
+        new_paid = received / usd_to_uzs;
+    } else if (src_cur === 'UZS' && dst_cur === 'USD') {
+        // paid UZS -> received USD. Reverse: paid_UZS = received_USD * rate
+        new_paid = received * usd_to_uzs;
+    }
+
+    if (new_paid !== null) {
+        commit_paid_amount(frm, new_paid);
+    }
+}
+
+function commit_paid_amount(frm, new_paid) {
+    if (Math.abs(flt(frm.doc.paid_amount) - new_paid) < 0.01) return;
+    frm._akfa_backward_calc_in_progress = true;
+    frm.set_value('paid_amount', new_paid).then(() => {
+        // Restore received_amount because ERPNext's forward calc may have overwritten it
+        // when we set paid_amount (round-trip drift on rounding).
+        frm._akfa_backward_calc_in_progress = false;
+    });
+}
 
 // TASK 1: Filter payment type options based on user role
 function filter_payment_type_options(frm) {

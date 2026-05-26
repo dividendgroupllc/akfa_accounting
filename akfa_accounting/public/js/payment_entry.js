@@ -80,12 +80,19 @@ frappe.ui.form.on('Payment Entry', {
         }, 500);
     },
 
+    party: function(frm) {
+        // After party set, re-pick paid_from/paid_to to match mode_of_payment currency.
+        sync_party_account_to_mode_currency(frm);
+    },
+
     paid_from_account_currency: function(frm) {
         update_exchange_rate_info(frm);
+        update_currency_labels(frm);
     },
 
     paid_to_account_currency: function(frm) {
         update_exchange_rate_info(frm);
+        update_currency_labels(frm);
     }
 });
 
@@ -227,24 +234,19 @@ function update_paid_to_balance(frm) {
 }
 
 function update_currency_labels(frm) {
-    // Update field labels based on currency from mode of payment
-    if (!frm.doc.mode_of_payment) {
-        return;
+    // Label currency must follow account currency, NOT mode_of_payment.
+    // paid_amount = paid_from currency; received_amount = paid_to currency.
+    let fallback = 'USD';
+    if (frm.doc.mode_of_payment && frm.doc.mode_of_payment.includes('UZS')) {
+        fallback = 'UZS';
     }
 
-    let currency = 'USD';
-    let currency_symbol = '$';
+    const paid_currency = frm.doc.paid_from_account_currency || fallback;
+    const received_currency = frm.doc.paid_to_account_currency || fallback;
 
-    if (frm.doc.mode_of_payment.includes('UZS')) {
-        currency = 'UZS';
-        currency_symbol = 'so\'m';
-    }
+    frm.set_df_property('paid_amount', 'label', `Paid Amount (${paid_currency})`);
+    frm.set_df_property('received_amount', 'label', `Received Amount (${received_currency})`);
 
-    // Update field labels
-    frm.set_df_property('paid_amount', 'label', `Paid Amount (${currency})`);
-    frm.set_df_property('received_amount', 'label', `Received Amount (${currency})`);
-
-    // Refresh fields to show new labels
     frm.refresh_field('paid_amount');
     frm.refresh_field('received_amount');
 }
@@ -347,10 +349,10 @@ function render_recent_payments(frm, response, page) {
                 <td style="padding: 10px;">${payment.party_type || '-'}</td>
                 <td style="padding: 10px;">${payment.party || '-'}</td>
                 <td style="padding: 10px; text-align: right; font-family: monospace;">
-                    ${format_currency(payment.paid_amount, 'USD')}
+                    ${format_amount_by_currency(payment.paid_amount, payment.paid_from_account_currency)}
                 </td>
                 <td style="padding: 10px; text-align: right; font-family: monospace;">
-                    ${format_currency(payment.received_amount, frm.doc.mode_of_payment)}
+                    ${format_amount_by_currency(payment.received_amount, payment.paid_to_account_currency)}
                 </td>
                 <td style="padding: 10px;">
                     <span class="indicator-pill ${status_color}" style="font-size: 11px;">
@@ -426,17 +428,72 @@ function get_status_color(status) {
 function format_currency(amount, mode_of_payment) {
     if (!amount) return '0.00';
 
-    // Determine currency based on mode_of_payment
     let symbol = '$ ';
 
     if (mode_of_payment && mode_of_payment.includes('UZS')) {
         symbol = ' so\'m';
-        // Manual formatting for UZS: remove existing symbol if any, append 'so'm'
         return format_number(amount, '#,###.##') + symbol;
     }
 
-    // Default for USD or others
     return symbol + format_number(amount, '#,###.##');
+}
+
+// Format amount by explicit currency code (USD, UZS, etc.) from PE row.
+function format_amount_by_currency(amount, currency) {
+    if (!amount) return '0.00';
+    if (currency === 'UZS') {
+        return format_number(amount, '#,###.##') + ' so\'m';
+    }
+    if (currency === 'USD') {
+        return '$ ' + format_number(amount, '#,###.##');
+    }
+    return format_number(amount, '#,###.##') + ' ' + (currency || '');
+}
+
+function sync_party_account_to_mode_currency(frm) {
+    // Ensure paid_from (Receive) / paid_to (Pay) currency matches mode_of_payment currency.
+    if (!frm.doc.party_type || !frm.doc.party || !frm.doc.company || !frm.doc.mode_of_payment) {
+        return;
+    }
+
+    const mode_currency = frm.doc.mode_of_payment.includes('UZS') ? 'UZS' : 'USD';
+
+    frappe.call({
+        method: 'akfa_accounting.akfa_accounting.api.payment_entry_api.get_party_account_for_currency',
+        args: {
+            party_type: frm.doc.party_type,
+            party: frm.doc.party,
+            company: frm.doc.company,
+            currency: mode_currency
+        },
+        callback: function(r) {
+            if (!r.message) {
+                frappe.show_alert({
+                    message: __(`${frm.doc.party} uchun ${mode_currency} valyutadagi hisob topilmadi. Multi-currency PE bo'lishi mumkin.`),
+                    indicator: 'orange'
+                }, 7);
+                return;
+            }
+
+            const account = r.message.account;
+            if (frm.doc.payment_type === 'Receive') {
+                if (frm.doc.paid_from !== account) {
+                    frm.set_value('paid_from', account);
+                }
+            } else if (frm.doc.payment_type === 'Pay') {
+                if (frm.doc.paid_to !== account) {
+                    frm.set_value('paid_to', account);
+                }
+            }
+
+            if (!r.message.matched) {
+                frappe.show_alert({
+                    message: __(`Diqqat: ${frm.doc.party} default hisobi boshqa valyutada. Fallback ${mode_currency} hisob tanlandi.`),
+                    indicator: 'orange'
+                }, 7);
+            }
+        }
+    });
 }
 
 function update_exchange_rate_info(frm) {
@@ -462,8 +519,8 @@ function update_exchange_rate_info(frm) {
             if (r.message && r.message.usd_to_uzs) {
                 const rates = r.message;
                 const usd_to_uzs = flt(rates.usd_to_uzs);
+                const is_stale = rates.date !== rates.requested_date;
 
-                // Format rate with thousands separator
                 const formatted_rate = format_number(usd_to_uzs, '#,###.##');
 
                 // Determine direction based on currencies
@@ -481,8 +538,15 @@ function update_exchange_rate_info(frm) {
                     main_rate = formatted_rate;
                 }
 
+                const bg_gradient = is_stale
+                    ? 'linear-gradient(135deg, #f39c12 0%, #d35400 100%)'
+                    : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                const label_text = is_stale
+                    ? `Eskirgan kurs (${rates.date})`
+                    : 'Bugungi kurs';
+
                 const html = `
-                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    <div style="background: ${bg_gradient};
                                 padding: 15px 20px;
                                 border-radius: 8px;
                                 color: white;
@@ -492,7 +556,7 @@ function update_exchange_rate_info(frm) {
                                 <div style="font-size: 12px; opacity: 0.9; margin-bottom: 4px;">
                                     <i class="fa fa-calendar"></i> ${frappe.datetime.str_to_user(rates.date)}
                                 </div>
-                                <div style="font-size: 11px; opacity: 0.8;">Bugungi kurs</div>
+                                <div style="font-size: 11px; opacity: 0.8;">${label_text}</div>
                             </div>
                             <div style="text-align: right;">
                                 <div style="font-size: 24px; font-weight: bold; font-family: monospace;">

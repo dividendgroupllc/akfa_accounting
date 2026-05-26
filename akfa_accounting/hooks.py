@@ -49,7 +49,7 @@ has_permission = {
 
 doc_events = {
 	"Payment Entry": {
-		"validate": "akfa_accounting.validations.payment_entry.validate_payment_type_role_restrictions",
+		"validate": "akfa_accounting.validations.payment_entry.validate_payment_entry",
 	},
 	"Expense Claim": {
 		"validate": "akfa_accounting.validations.expense_claim.validate_trip_membership",

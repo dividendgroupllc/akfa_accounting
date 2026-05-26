@@ -26,6 +26,8 @@ def get_recent_payments(mode_of_payment, posting_date=None, start=0, limit=50):
             party,
             paid_amount,
             received_amount,
+            paid_from_account_currency,
+            paid_to_account_currency,
             status
         FROM `tabPayment Entry`
         WHERE docstatus = 1
@@ -103,12 +105,8 @@ def get_payment_entry_defaults(payment_type, mode_of_payment, company, posting_d
 		verified_account = get_account_by_company(account, company)
 		if verified_account:
 			result["paid_from"] = verified_account
-			paid_from_balance = get_account_balance(verified_account, posting_date, company)
-			result["paid_from_account_balance"] = paid_from_balance
-			# Set the same balance to paid_to_account_balance
-			result["paid_to_account_balance"] = paid_from_balance
-		
-		# Get creditors account for paid_to
+			result["paid_from_account_balance"] = get_account_balance(verified_account, posting_date, company)
+
 		creditors_account = frappe.db.get_value(
 			"Account",
 			{"account_number": creditors_account_number, "company": company},
@@ -116,6 +114,7 @@ def get_payment_entry_defaults(payment_type, mode_of_payment, company, posting_d
 		)
 		if creditors_account:
 			result["paid_to"] = creditors_account
+			result["paid_to_account_balance"] = get_account_balance(creditors_account, posting_date, company)
 	
 	elif payment_type == "Internal Transfer":
 		# Internal Transfer logic
@@ -148,6 +147,52 @@ def get_payment_entry_defaults(payment_type, mode_of_payment, company, posting_d
 				result["paid_to_account_balance"] = get_account_balance(verified_to, posting_date, company)
 	
 	return result
+
+
+@frappe.whitelist()
+def get_party_account_for_currency(party_type, party, company, currency):
+	"""Return the party's receivable/payable account that matches the requested currency.
+
+	Customer/Supplier may have a default account in one currency (e.g. USD) but invoices
+	in another (e.g. UZS). When mode_of_payment forces a target currency, ERPNext picks
+	the party's default account silently, which may mismatch. This explicitly resolves
+	the right account or returns None so caller can warn the user.
+	"""
+	if not all([party_type, party, company, currency]):
+		return None
+
+	from erpnext.accounts.party import get_party_account
+
+	default_account = get_party_account(party_type, party, company)
+	if default_account:
+		acc_currency = frappe.db.get_value("Account", default_account, "account_currency")
+		if acc_currency == currency:
+			return {"account": default_account, "matched": True}
+
+	root_type = "Receivable" if party_type == "Customer" else "Payable"
+	candidate = frappe.db.sql("""
+		SELECT pa.account
+		FROM `tabParty Account` pa
+		INNER JOIN `tabAccount` a ON a.name = pa.account
+		WHERE pa.parenttype = %s AND pa.parent = %s
+		  AND a.company = %s AND a.account_currency = %s
+		LIMIT 1
+	""", (party_type, party, company, currency), as_dict=True)
+
+	if candidate:
+		return {"account": candidate[0].account, "matched": True}
+
+	fallback = frappe.db.sql("""
+		SELECT name FROM `tabAccount`
+		WHERE company = %s AND account_currency = %s
+		  AND root_type = %s AND is_group = 0
+		LIMIT 1
+	""", (company, currency, root_type), as_dict=True)
+
+	if fallback:
+		return {"account": fallback[0].name, "matched": False}
+
+	return None
 
 
 @frappe.whitelist()

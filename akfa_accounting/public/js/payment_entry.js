@@ -113,25 +113,25 @@ function backward_calc_paid_amount(frm) {
     const received = flt(frm.doc.received_amount);
     if (!received) return;
 
-    let source_rate = flt(frm.doc.source_exchange_rate);
-    let target_rate = flt(frm.doc.target_exchange_rate);
-
-    // ERPNext fallback: missing source rate when reverse Currency Exchange row is absent.
-    // Use the displayed USD<->UZS rate as fallback so cashier-entered values still resolve.
-    const need_fallback = !source_rate || (source_rate === 1 && src_cur !== frappe.boot.sysdefaults.currency);
-    if (need_fallback || !target_rate) {
+    // USD<->UZS: always use direct USD->UZS Currency Exchange rate to avoid
+    // precision loss from ERPNext's reciprocal-rounded source_exchange_rate.
+    const is_usd_uzs = (src_cur === 'USD' && dst_cur === 'UZS') || (src_cur === 'UZS' && dst_cur === 'USD');
+    if (is_usd_uzs) {
         frappe.call({
             method: 'akfa_accounting.akfa_accounting.api.payment_entry_api.get_daily_exchange_rates',
             args: { date: frm.doc.posting_date || frappe.datetime.get_today() },
             callback: function(r) {
                 if (!r.message || !r.message.usd_to_uzs) return;
-                const usd_to_uzs = flt(r.message.usd_to_uzs);
-                apply_backward_calc(frm, received, src_cur, dst_cur, usd_to_uzs);
+                apply_backward_calc(frm, received, src_cur, dst_cur, flt(r.message.usd_to_uzs));
             }
         });
         return;
     }
 
+    // Other currency pairs: rely on ERPNext rates.
+    const source_rate = flt(frm.doc.source_exchange_rate);
+    const target_rate = flt(frm.doc.target_exchange_rate);
+    if (!source_rate || !target_rate) return;
     const company_amount = received * target_rate;
     const new_paid = company_amount / source_rate;
     commit_paid_amount(frm, new_paid);

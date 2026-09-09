@@ -22,7 +22,8 @@ class ProvisioningService:
         """Create Travel Request for each member"""
         for member in self.trip.members:
             tr = self._create_single_request(member, project_name)
-            member.travel_request = tr.name
+            # on_submit runs after child rows are written, so persist explicitly
+            member.db_set("travel_request", tr.name, update_modified=False)
             self.created_requests.append(tr.name)
 
         frappe.msgprint(

@@ -32,8 +32,10 @@ class FleetService:
         # Get vehicle document
         vehicle_doc = frappe.get_doc("Vehicle", vehicle_row.vehicle)
 
-        # Store previous status
-        vehicle_row.previous_status = vehicle_doc.custom_trip_status or "Available"
+        # Store previous status (on_submit runs after child rows are written)
+        vehicle_row.db_set(
+            "previous_status", vehicle_doc.custom_trip_status or "Available", update_modified=False
+        )
 
         # Update vehicle status
         vehicle_doc.custom_trip_status = "In Trip"

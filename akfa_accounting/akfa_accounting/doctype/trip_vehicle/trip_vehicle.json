@@ -54,7 +54,8 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Driver",
-   "options": "Employee"
+   "options": "Employee",
+   "ignore_user_permissions": 1
   },
   {
    "fetch_from": "driver.employee_name",

@@ -8,6 +8,12 @@ from akfa_accounting.mobile_api.trip_info import (
 )
  
 
+def _check_trip_read(trip_master):
+	"""Raise unless the current user may read this Trip Master."""
+	if not frappe.has_permission("Trip Master", "read", trip_master):
+		frappe.throw("Not permitted", frappe.PermissionError)
+
+
 @frappe.whitelist()
 def log_trip_path(trip_master, employee, latitude, longitude, activity_type=None):
 	"""Whitelisted wrapper for mobile location logging."""
@@ -15,14 +21,22 @@ def log_trip_path(trip_master, employee, latitude, longitude, activity_type=None
 
 
 @frappe.whitelist()
-def get_active_trip(employee):
-	"""Whitelisted wrapper to fetch active trip for an employee."""
+def get_active_trip(employee=None):
+	"""Whitelisted wrapper to fetch active trip for an employee.
+
+	Defaults to the session's own employee; querying somebody else needs HR rights.
+	"""
+	if employee:
+		session_employee = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "name")
+		if employee != session_employee and not frappe.has_permission("Employee", "read", employee):
+			frappe.throw("Not permitted", frappe.PermissionError)
 	return get_active_trip_service(employee)
 
 
 @frappe.whitelist()
 def get_trip_balance(trip_id):
 	"""Whitelisted wrapper to fetch trip budget balance."""
+	_check_trip_read(trip_id)
 	return get_trip_balance_service(trip_id)
 
 
@@ -31,6 +45,7 @@ def get_trip_path(trip_master):
 	"""Fetch Trip Path Log points sorted by timestamp"""
 	if not trip_master:
 		return []
+	_check_trip_read(trip_master)
 	return frappe.get_all(
 		"Trip Path Log",
 		filters={"trip_master": trip_master},

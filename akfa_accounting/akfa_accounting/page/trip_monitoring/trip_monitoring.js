@@ -282,7 +282,7 @@ class TripMonitoringDashboard {
 			var link = document.createElement('link');
 			link.id = 'leaflet-css-link';
 			link.rel = 'stylesheet';
-			link.href = 'https://unpkg.com/[email protected]/dist/leaflet.css';
+			link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
 			document.head.appendChild(link);
 		}
 
@@ -291,7 +291,7 @@ class TripMonitoringDashboard {
 			callback();
 		} else {
 			var script = document.createElement('script');
-			script.src = 'https://unpkg.com/[email protected]/dist/leaflet.js';
+			script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
 			script.onload = callback;
 			document.head.appendChild(script);
 		}

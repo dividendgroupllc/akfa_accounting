@@ -1,19 +1,23 @@
 {
-    "creation": "2024-01-01 10:00:00",
-    "docstatus": 0,
-    "doctype": "Page",
-    "idx": 0,
-    "modified": "2024-01-01 10:00:00",
-    "modified_by": "Administrator",
-    "module": "Akfa Accounting",
-    "name": "Mobile HR",
-    "owner": "Administrator",
-    "page_name": "mobile-hr",
-    "roles": [
-        {
-            "role": "Employee"
-        }
-    ],
-    "standard": "Yes",
-    "title": "Mobile HR"
+ "content": null,
+ "creation": "2024-01-01 10:00:00",
+ "docstatus": 0,
+ "doctype": "Page",
+ "idx": 0,
+ "modified": "2024-01-01 10:00:00",
+ "modified_by": "Administrator",
+ "module": "akfa_accounting",
+ "name": "mobile-hr",
+ "owner": "Administrator",
+ "page_name": "mobile-hr",
+ "roles": [
+  {
+   "role": "Employee"
+  }
+ ],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0,
+ "title": "Mobile HR"
 }

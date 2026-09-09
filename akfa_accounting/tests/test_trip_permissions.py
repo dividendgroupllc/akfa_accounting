@@ -291,34 +291,23 @@ class TestTripPermissions(unittest.TestCase):
                         exp_doc.cancel()
                     frappe.delete_doc("Expense Claim", exp.name, force=1)
 
-                # Cancel linked Employee Advances first
-                advances = frappe.get_all(
-                    "Employee Advance",
-                    filters={"custom_trip_master": trip_name, "docstatus": 1}
-                )
-                for adv in advances:
-                    adv_doc = frappe.get_doc("Employee Advance", adv.name)
-                    adv_doc.flags.ignore_permissions = True
-                    adv_doc.cancel()
-                    frappe.delete_doc("Employee Advance", adv.name, force=1)
-
-                # Cancel linked Travel Requests
-                travel_requests = frappe.get_all(
-                    "Travel Request",
-                    filters={"custom_trip_master": trip_name, "docstatus": 1}
-                )
-                for tr in travel_requests:
-                    tr_doc = frappe.get_doc("Travel Request", tr.name)
-                    tr_doc.flags.ignore_permissions = True
-                    tr_doc.cancel()
-                    frappe.delete_doc("Travel Request", tr.name, force=1)
-
-                # Now cancel the trip
+                # Cancel the trip first - it holds links to the documents below
+                # and cascades the cancellation to them
                 trip = frappe.get_doc("Trip Master", trip_name)
                 if trip.docstatus == 1:
                     trip.flags.ignore_permissions = True
                     trip.cancel()
                 frappe.delete_doc("Trip Master", trip_name, force=1)
+
+                for adv in frappe.get_all(
+                    "Employee Advance", filters={"custom_trip_master": trip_name}
+                ):
+                    frappe.delete_doc("Employee Advance", adv.name, force=1)
+
+                for tr in frappe.get_all(
+                    "Travel Request", filters={"custom_trip_master": trip_name}
+                ):
+                    frappe.delete_doc("Travel Request", tr.name, force=1)
 
                 # Delete linked project if exists
                 if project_name and frappe.db.exists("Project", project_name):

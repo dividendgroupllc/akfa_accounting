@@ -162,17 +162,14 @@ def _link_employee_advance(claim, trip_master, employee, amount):
 	
 	# Get advance document
 	advance_doc = frappe.get_doc("Employee Advance", advance.name)
-	
-	# Calculate unclaimed based on whether advance is paid or not
-	# If advance is "Paid" - use paid_amount, otherwise use advance_amount (pending payment)
-	if advance.status == "Paid":
-		available = flt(advance.paid_amount) - flt(advance.claimed_amount)
-	else:
-		# Advance approved but not yet paid - still allocate from advance_amount
-		available = flt(advance.advance_amount) - flt(advance.claimed_amount)
-	
+
+	# Expense Claim only accepts allocations against money the employee actually
+	# received: HRMS validates against paid_amount - claimed_amount. Allocating a
+	# not-yet-paid advance makes the claim unsavable, so leave it as reimbursement.
+	available = flt(advance.paid_amount) - flt(advance.claimed_amount)
+
 	if available <= 0:
-		# Advance fully used, expense will be "Unpaid"
+		# Nothing paid out yet (or advance fully used), expense will be "Unpaid"
 		return
 	
 	# Allocate from advance (up to expense amount or available amount)
@@ -184,7 +181,7 @@ def _link_employee_advance(claim, trip_master, employee, amount):
 		{
 			"employee_advance": advance.name,
 			"posting_date": advance_doc.posting_date,
-			"advance_paid": flt(advance.paid_amount) if advance.status == "Paid" else flt(advance.advance_amount),
+			"advance_paid": flt(advance.paid_amount),
 			"unclaimed_amount": available,
 			"allocated_amount": allocated,
 			"advance_account": advance_doc.advance_account,

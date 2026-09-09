@@ -1,15 +1,6 @@
 import frappe
 
 from akfa_accounting.api import get_active_trip, get_trip_balance
-from akfa_accounting.events.login_redirect import redirect_employee
-
-
-def login_probe(user, password):
-	frappe.set_user(user)
-	frappe.local.response = frappe._dict()
-	redirect_employee()
-	frappe.set_user("Administrator")
-	return frappe.local.response
 
 
 def permission_probe(user):

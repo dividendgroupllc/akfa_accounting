@@ -32,25 +32,26 @@ def validate_trip_membership(doc, method=None):
     if not user_employee:
         return  # No employee linked, let standard permissions handle it
 
-    # Check if the expense claim employee is different from current user
-    # (e.g., HR creating on behalf of employee - should be allowed)
-    if doc.employee != user_employee:
-        return
+    # Both the acting user and the claim's employee must be on the trip, so that
+    # naming somebody else in `employee` cannot be used to bypass the guard.
+    for employee in dict.fromkeys([user_employee, doc.employee]):
+        if not _is_trip_member(doc.custom_trip_master, employee):
+            frappe.throw(
+                _("You cannot create Expense Claim for Trip Master {0} because {1} is not a member of this trip").format(
+                    frappe.bold(doc.custom_trip_master), frappe.bold(employee)
+                ),
+                frappe.PermissionError
+            )
 
-    # Validate that employee is a member of the trip
-    member_exists = frappe.db.exists(
-        "Trip Member",
-        {
-            "parent": doc.custom_trip_master,
-            "parenttype": "Trip Master",
-            "employee": doc.employee
-        }
-    )
 
-    if not member_exists:
-        frappe.throw(
-            _("You cannot create Expense Claim for Trip Master {0} because you are not a member of this trip").format(
-                frappe.bold(doc.custom_trip_master)
-            ),
-            frappe.PermissionError
+def _is_trip_member(trip_master, employee):
+    return bool(
+        frappe.db.exists(
+            "Trip Member",
+            {
+                "parent": trip_master,
+                "parenttype": "Trip Master",
+                "employee": employee
+            }
         )
+    )

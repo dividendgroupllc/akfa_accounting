@@ -18,7 +18,7 @@ doctype_js = {
 	],
 }
 
-app_include_js = ["/assets/akfa_accounting/js/pwa_init.js"]
+app_include_js = ["pwa_init.bundle.js"]
 
 fixtures = [
 	{
@@ -64,4 +64,3 @@ doc_events = {
 	}
 }
 
-on_login = "akfa_accounting.events.login_redirect.redirect_employee"

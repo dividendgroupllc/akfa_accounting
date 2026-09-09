@@ -108,7 +108,8 @@ class FinancialService:
         ea.insert()
         ea.submit()
 
-        leader.employee_advance = ea.name
+        # on_submit runs after child rows are written, so persist explicitly
+        leader.db_set("employee_advance", ea.name, update_modified=False)
         self.created_advance = ea.name
 
         # Notify Finance Manager for approval
@@ -170,8 +171,6 @@ class FinancialService:
                 notification_doc.insert(ignore_permissions=True)
             except Exception as e:
                 frappe.log_error(f"Error sending notification to {manager.user}: {e}")
-
-        frappe.db.commit()
 
     def _get_advance_account(self):
         """Get employee advance account from company"""

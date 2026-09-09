@@ -96,12 +96,16 @@ def get_permission_query_conditions(user):
     ))"""
 
 
-def has_permission(doc, user):
+def has_permission(doc, ptype=None, user=None):
     """
     Document-level permission check
     """
     if not user:
         user = frappe.session.user
+
+    # A new document has no members yet; let role permissions decide
+    if ptype == "create":
+        return None
 
     # Administrator bypass - full access
     if user == "Administrator":

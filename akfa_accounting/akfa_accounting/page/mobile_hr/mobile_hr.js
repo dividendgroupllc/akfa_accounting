@@ -150,17 +150,13 @@ frappe.pages['mobile-hr'].on_page_load = function (wrapper) {
             btn.html('<i class="fa fa-spinner fa-spin"></i> Saqlanmoqda...');
 
             frappe.call({
-                method: 'frappe.client.insert',
+                method: 'akfa_accounting.api.log_trip_path',
                 args: {
-                    doc: {
-                        doctype: 'Trip Path Log',
-                        trip_master: tripMaster,
-                        employee: employeeId,
-                        latitude: pos.coords.latitude,
-                        longitude: pos.coords.longitude,
-                        activity_type: 'Checkpoint',
-                        timestamp: frappe.datetime.now_datetime()
-                    }
+                    trip_master: tripMaster,
+                    employee: employeeId,
+                    latitude: pos.coords.latitude,
+                    longitude: pos.coords.longitude,
+                    activity_type: 'Checkpoint'
                 },
                 callback: function (r) {
                     btn.prop('disabled', false).html('<i class="fa fa-map-marker"></i> CHECK IN');

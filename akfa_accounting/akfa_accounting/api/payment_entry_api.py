@@ -1,5 +1,6 @@
 import frappe
 import math
+from frappe.utils import cint
 
 @frappe.whitelist()
 def get_recent_payments(mode_of_payment, posting_date=None, start=0, limit=50):
@@ -247,12 +248,12 @@ def get_daily_exchange_rates(date=None):
 
 
 @frappe.whitelist()
-def get_account_balance(account, date=None):
+def get_account_balance(account, date=None, company=None, in_account_currency=1):
     """Whitelisted wrapper for an account's balance on a date.
 
     ERPNext's erpnext.accounts.utils.get_balance_on is NOT whitelisted, so the
     client cannot call it directly (even as Administrator). The Payment Entry
-    client script calls this instead to show paid_from/paid_to balances.
+    client script and the Kassa qoldiqlari HTML blocks call this instead.
     """
     if not account:
         return 0
@@ -261,5 +262,10 @@ def get_account_balance(account, date=None):
         date = frappe.utils.today()
 
     from erpnext.accounts.utils import get_balance_on
-    return get_balance_on(account=account, date=date) or 0
+    return get_balance_on(
+        account=account,
+        date=date,
+        company=company,
+        in_account_currency=cint(in_account_currency),
+    ) or 0
 

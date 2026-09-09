@@ -7,7 +7,9 @@
  "field_order": [
   "category",
   "total_usd",
-  "total_uzs"
+  "total_uzs",
+  "cur_usd",
+  "cur_uzs"
  ],
  "fields": [
   {
@@ -23,7 +25,7 @@
    "fieldtype": "Currency",
    "in_list_view": 1,
    "label": "USD Summa",
-   "options": "USD",
+   "options": "cur_usd",
    "read_only": 1
   },
   {
@@ -31,7 +33,25 @@
    "fieldtype": "Currency",
    "in_list_view": 1,
    "label": "UZS Summa",
-   "options": "UZS",
+   "options": "cur_uzs",
+   "read_only": 1
+  },
+  {
+   "default": "USD",
+   "fieldname": "cur_usd",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "USD valyuta kodi",
+   "print_hide": 1,
+   "read_only": 1
+  },
+  {
+   "default": "UZS",
+   "fieldname": "cur_uzs",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "UZS valyuta kodi",
+   "print_hide": 1,
    "read_only": 1
   }
  ],

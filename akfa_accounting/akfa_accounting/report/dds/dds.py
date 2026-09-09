@@ -39,6 +39,8 @@ def get_columns():
         {"fieldname": "account", "label": _("Касса счёт"), "fieldtype": "Link", "options": "Account", "width": 180},
         {"fieldname": "direction", "label": _("Кирим/Чиқим"), "fieldtype": "Data", "width": 100},
         {"fieldname": "description", "label": _("Категория"), "fieldtype": "Data", "width": 250},
+        {"fieldname": "schet", "label": _("Счёт"), "fieldtype": "Data", "width": 140},
+        {"fieldname": "tip1", "label": _("Тип 1"), "fieldtype": "Data", "width": 130},
         {"fieldname": "summa", "label": _("Сумма"), "fieldtype": "Currency", "options": "currency", "width": 130},
         {"fieldname": "currency", "label": _("Валюта"), "fieldtype": "Link", "options": "Currency", "hidden": 1},
         {"fieldname": "remarks", "label": _("Изоҳ"), "fieldtype": "Data", "width": 200},
@@ -139,6 +141,8 @@ def get_data(filters):
             "employee_group": emp_group,
             "description": strip_category_prefix(info["description"]),
             "category": info["category"],
+            "schet": info.get("schet", ""),
+            "tip1": info.get("tip1", ""),
             "summa": kirim if kirim else chiqim,
             "remarks": get_remarks(row, pe_info, je_remarks),
             "voucher_type": row.voucher_type,
@@ -228,9 +232,11 @@ def get_journal_entry_info_batch(voucher_nos):
 
     entries = frappe.db.sql("""
         SELECT jea.parent, jea.account, jea.party_type, jea.party,
-               acc.root_type, acc.account_type, acc.account_name
+               acc.root_type, acc.account_type, acc.account_name,
+               pacc.account_name AS parent_account_name
         FROM `tabJournal Entry Account` jea
         LEFT JOIN `tabAccount` acc ON acc.name = jea.account
+        LEFT JOIN `tabAccount` pacc ON pacc.name = acc.parent_account
         WHERE jea.parent IN %s
     """, (voucher_nos,), as_dict=True)
 
@@ -313,7 +319,16 @@ def resolve_transaction_info(row, pe_info, je_info, cash_accounts):
                     "party": acc.party,
                 }
             if acc.root_type == "Expense":
-                return {"description": f"Расходы: {acc.account_name}", "category": "expense", "party_type": None, "party": None}
+                # Xarajat schoti Kassa Rasxod qatoridagi "Тип 1", uning ota schoti esa "Счёт".
+                # Ikkalasi ham hujjatga alohida yozilmaydi — schotlar daraxtidan tiklanadi.
+                return {
+                    "description": f"Расходы: {acc.account_name}",
+                    "category": "expense",
+                    "party_type": None,
+                    "party": None,
+                    "schet": acc.parent_account_name or "",
+                    "tip1": acc.account_name or "",
+                }
             if acc.root_type == "Equity":
                 return {"description": f"Дивиденды: {acc.account_name}", "category": "dividend", "party_type": None, "party": None}
 
@@ -326,12 +341,26 @@ def resolve_transaction_info(row, pe_info, je_info, cash_accounts):
             direction = "из" if flt(row.debit_in_account_currency) > 0 else "в"
             return {"description": f"Перемещение {direction} {is_cash}", "category": "transfer", "party_type": None, "party": None}
 
-        acc_info = frappe.db.get_value("Account", against_account, ["account_name", "root_type", "account_type"], as_dict=True)
+        acc_info = frappe.db.get_value(
+            "Account", against_account,
+            ["account_name", "root_type", "account_type", "parent_account"], as_dict=True
+        )
         if acc_info:
             if acc_info.account_type == "Temporary":
                 return {"description": "Начальный остаток", "category": "opening", "party_type": None, "party": None}
             if acc_info.root_type == "Expense":
-                return {"description": f"Расходы: {acc_info.account_name}", "category": "expense", "party_type": None, "party": None}
+                parent_name = (
+                    frappe.get_cached_value("Account", acc_info.parent_account, "account_name")
+                    if acc_info.parent_account else ""
+                ) or ""
+                return {
+                    "description": f"Расходы: {acc_info.account_name}",
+                    "category": "expense",
+                    "party_type": None,
+                    "party": None,
+                    "schet": parent_name,
+                    "tip1": acc_info.account_name or "",
+                }
             if acc_info.root_type == "Equity":
                 return {"description": f"Дивиденды: {acc_info.account_name}", "category": "dividend", "party_type": None, "party": None}
             if acc_info.account_type == "Receivable":
@@ -558,12 +587,16 @@ def export_dds_excel(filters):
     summary_rows.append(["Конечный остаток", None, s["closing"]])
 
     # Транзакции varaqi — xom qatorlar (Employee Group ustuni Кирим/Чиқим bilan Категория orasida)
-    txn_rows = [["Сана", "Касса счёт", "Кирим/Чиқим", "Employee Group", "Категория", "Сумма", "Валюта", "Изоҳ", "Тип", "Документ"]]
+    txn_rows = [["Сана", "Касса счёт", "Кирим/Чиқим", "Employee Group", "Категория",
+                 "Счёт", "Тип 1",
+                 "Сумма", "Валюта", "Изоҳ", "Тип", "Документ"]]
     for r in data:
         txn_rows.append([
             r.get("posting_date"), r.get("account"), r.get("direction"),
             r.get("employee_group"),
-            r.get("description"), r.get("summa"), r.get("currency"),
+            r.get("description"),
+            r.get("schet"), r.get("tip1"),
+            r.get("summa"), r.get("currency"),
             r.get("remarks"), r.get("voucher_type"), r.get("voucher_no"),
         ])
 

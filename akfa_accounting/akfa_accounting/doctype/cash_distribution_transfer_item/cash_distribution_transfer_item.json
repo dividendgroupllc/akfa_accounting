@@ -37,7 +37,8 @@
    "fieldtype": "Currency",
    "in_list_view": 1,
    "label": "Amount",
-   "read_only": 1
+   "read_only": 1,
+   "options": "currency"
   },
   {
    "fieldname": "source_account",

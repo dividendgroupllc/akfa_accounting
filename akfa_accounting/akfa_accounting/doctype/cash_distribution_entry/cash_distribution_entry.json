@@ -42,7 +42,9 @@
         "journal_entry",
         "amended_from",
         "total_received_usd",
-        "total_received_uzs"
+        "total_received_uzs",
+        "cur_usd",
+        "cur_uzs"
     ],
     "fields": [
         {
@@ -77,14 +79,14 @@
             "fieldname": "aripov_usd_balance",
             "fieldtype": "Currency",
             "label": "Aripov USD Balans",
-            "options": "USD",
+            "options": "cur_usd",
             "read_only": 1
         },
         {
             "fieldname": "aripov_uzs_balance",
             "fieldtype": "Currency",
             "label": "Aripov UZS Balans",
-            "options": "UZS",
+            "options": "cur_uzs",
             "read_only": 1
         },
         {
@@ -106,7 +108,7 @@
             "fieldtype": "Currency",
             "hidden": 1,
             "label": "Transfers (USD)",
-            "options": "USD",
+            "options": "cur_usd",
             "read_only": 1
         },
         {
@@ -114,7 +116,7 @@
             "fieldtype": "Currency",
             "hidden": 1,
             "label": "Transfers (UZS)",
-            "options": "UZS",
+            "options": "cur_uzs",
             "read_only": 1
         },
         {
@@ -134,7 +136,7 @@
             "fieldname": "hamidulla_rasxod_usd",
             "fieldtype": "Currency",
             "label": "Hamidulla Rasxod (USD)",
-            "options": "USD",
+            "options": "cur_usd",
             "read_only": 1
         },
         {
@@ -158,14 +160,14 @@
             "fieldname": "receive_total_usd",
             "fieldtype": "Currency",
             "label": "Qabul (USD)",
-            "options": "USD",
+            "options": "cur_usd",
             "read_only": 1
         },
         {
             "fieldname": "receive_total_uzs",
             "fieldtype": "Currency",
             "label": "Qabul (UZS)",
-            "options": "UZS",
+            "options": "cur_uzs",
             "read_only": 1
         },
         {
@@ -210,21 +212,21 @@
             "fieldname": "aripov_total_usd",
             "fieldtype": "Currency",
             "label": "ARIPOV TOTAL (USD)",
-            "options": "USD",
+            "options": "cur_usd",
             "read_only": 1
         },
         {
             "fieldname": "total_distributed_usd",
             "fieldtype": "Currency",
             "label": "Total Distributed (USD)",
-            "options": "USD",
+            "options": "cur_usd",
             "read_only": 1
         },
         {
             "fieldname": "difference_usd",
             "fieldtype": "Currency",
             "label": "Difference (USD)",
-            "options": "USD",
+            "options": "cur_usd",
             "read_only": 1
         },
         {
@@ -237,21 +239,21 @@
             "fieldname": "aripov_total_uzs",
             "fieldtype": "Currency",
             "label": "ARIPOV TOTAL (UZS)",
-            "options": "UZS",
+            "options": "cur_uzs",
             "read_only": 1
         },
         {
             "fieldname": "total_distributed_uzs",
             "fieldtype": "Currency",
             "label": "Total Distributed (UZS)",
-            "options": "UZS",
+            "options": "cur_uzs",
             "read_only": 1
         },
         {
             "fieldname": "difference_uzs",
             "fieldtype": "Currency",
             "label": "Difference (UZS)",
-            "options": "UZS",
+            "options": "cur_uzs",
             "read_only": 1
         },
         {
@@ -280,13 +282,33 @@
             "fieldtype": "Currency",
             "hidden": 1,
             "label": "Total Received (USD)",
-            "read_only": 1
+            "read_only": 1,
+            "options": "cur_usd"
         },
         {
             "fieldname": "total_received_uzs",
             "fieldtype": "Currency",
             "hidden": 1,
             "label": "Total Received (UZS)",
+            "read_only": 1,
+            "options": "cur_uzs"
+        },
+        {
+            "default": "USD",
+            "fieldname": "cur_usd",
+            "fieldtype": "Data",
+            "hidden": 1,
+            "label": "USD valyuta kodi",
+            "print_hide": 1,
+            "read_only": 1
+        },
+        {
+            "default": "UZS",
+            "fieldname": "cur_uzs",
+            "fieldtype": "Data",
+            "hidden": 1,
+            "label": "UZS valyuta kodi",
+            "print_hide": 1,
             "read_only": 1
         }
     ],

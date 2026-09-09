@@ -7,7 +7,8 @@
  "field_order": [
   "posting_date",
   "kassa_rasxod",
-  "amount_usd"
+  "amount_usd",
+  "cur_usd"
  ],
  "fields": [
   {
@@ -30,7 +31,16 @@
    "fieldtype": "Currency",
    "in_list_view": 1,
    "label": "Summa (USD)",
-   "options": "USD",
+   "options": "cur_usd",
+   "read_only": 1
+  },
+  {
+   "default": "USD",
+   "fieldname": "cur_usd",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "USD valyuta kodi",
+   "print_hide": 1,
    "read_only": 1
   }
  ],

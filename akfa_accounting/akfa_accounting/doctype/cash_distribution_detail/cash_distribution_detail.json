@@ -10,7 +10,8 @@
   "amount",
   "usd_ekvivalent",
   "creditors_account",
-  "party_currency"
+  "party_currency",
+  "cur_usd"
  ],
  "fields": [
   {
@@ -47,7 +48,7 @@
    "in_list_view": 1,
    "columns": 2,
    "label": "USD Ekvivalent",
-   "options": "USD",
+   "options": "cur_usd",
    "read_only": 1,
    "description": "USD da hisoblangan summa"
   },
@@ -67,6 +68,15 @@
    "columns": 1,
    "label": "Kontragent Valyutasi",
    "options": "Currency",
+   "read_only": 1
+  },
+  {
+   "default": "USD",
+   "fieldname": "cur_usd",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "USD valyuta kodi",
+   "print_hide": 1,
    "read_only": 1
   }
  ],

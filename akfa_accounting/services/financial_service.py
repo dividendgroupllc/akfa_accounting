@@ -187,6 +187,30 @@ class FinancialService:
 
         return advance_account
 
+    def cancel_expense_claims(self):
+        """Safarga bog'langan Expense Claim larni bekor qiladi.
+
+        Bu Employee Advance dan OLDIN bajarilishi shart: submit holatdagi Expense
+        Claim avansga bog'langan bo'lsa, avansni bekor qilib bo'lmaydi va xato
+        yuz beradi."""
+        claims = frappe.get_all(
+            "Expense Claim",
+            filters={"custom_trip_master": self.trip.name, "docstatus": 1},
+            pluck="name",
+        )
+
+        for claim_name in claims:
+            try:
+                claim = frappe.get_doc("Expense Claim", claim_name)
+                claim.flags.ignore_permissions = True
+                claim.cancel()
+                frappe.msgprint(_("Expense Claim {0} cancelled").format(claim_name))
+            except Exception as e:
+                frappe.log_error(
+                    title=f"Error cancelling Expense Claim {claim_name}",
+                    message=str(e),
+                )
+
     def cancel_employee_advance(self, leader):
         """Cancel linked Employee Advance"""
         if not leader or not leader.employee_advance:

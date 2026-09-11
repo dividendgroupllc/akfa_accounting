@@ -2,6 +2,15 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on('Trip Master', {
+	setup: function(frm) {
+		// Trip Master o'zi yaratgan hujjatlarni on_cancel da o'zi bekor qiladi
+		// (TripOrchestrator, ignore_links bilan). Frappe ning "Cancel All" oynasi esa
+		// teskari tartibda — avval bolalarni bekor qilmoqchi bo'ladi va "Travel Request
+		// hali Trip Master ga bog'langan" deb to'xtab qoladi. Ro'yxatga qo'shilgan
+		// doctypelar o'sha oynadan chetlatiladi va bekor qilish to'g'ri yo'ldan ketadi.
+		frm.ignore_doctypes_on_cancel_all = ['Travel Request', 'Employee Advance', 'Expense Claim'];
+	},
+
 	refresh: function(frm) {
 		// Add monitoring button for submitted trips
 		if (frm.doc.docstatus === 1) {

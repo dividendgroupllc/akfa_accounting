@@ -64,23 +64,63 @@ class TripOrchestrator:
     def on_cancel(self):
         """Execute cancel workflow"""
         try:
-            # Step 1: Cancel Travel Requests
+            # Step 1: Cancel Expense Claims — bu BIRINCHI bo'lishi shart, chunki
+            # submit holatdagi xarajat avansni bekor qilishga yo'l bermaydi
+            self.financial.cancel_expense_claims()
+
+            # Step 2: Cancel Travel Requests
             self.provisioning.cancel_travel_requests()
 
-            # Step 2: Cancel Employee Advance
+            # Step 3: Cancel Employee Advance
             leader = self.provisioning.get_leader()
             if leader:
                 self.financial.cancel_employee_advance(leader)
 
-            # Step 3: Release Vehicles
+            # Step 4: Release Vehicles
             self.fleet.release_vehicles()
 
-            # Step 4: Update status
+            # Step 5: Update status
             self.doc.db_set("status", "Cancelled")
+
+            # Step 6: Haqiqatda nima bekor bo'lganini tekshirib, qolganini aytish
+            self._warn_about_leftovers()
 
         except Exception as e:
             frappe.throw(
                 _("Trip Master cancel failed: {0}").format(str(e))
+            )
+
+    def _warn_about_leftovers(self):
+        """Bekor qilinmay qolgan hujjatlar haqida ogohlantiradi.
+
+        Yuqoridagi bekor qilishlar xatoni yutadi va faqat logga yozadi — shuning
+        uchun Trip Master "Cancelled" bo'lib ko'rinsa ham, ostidagi hujjat submit
+        holatda qolishi mumkin edi. Bu yerda haqiqiy holat o'qib tekshiriladi."""
+        qolgan = []
+
+        for member in self.doc.members:
+            for doctype, docname in (
+                ("Travel Request", member.travel_request),
+                ("Employee Advance", member.employee_advance),
+            ):
+                if not docname:
+                    continue
+                if frappe.db.get_value(doctype, docname, "docstatus") == 1:
+                    qolgan.append(f"{_(doctype)}: {docname}")
+
+        claims = frappe.get_all(
+            "Expense Claim",
+            filters={"custom_trip_master": self.doc.name, "docstatus": 1},
+            pluck="name",
+        )
+        qolgan.extend(f"{_('Expense Claim')}: {c}" for c in claims)
+
+        if qolgan:
+            frappe.msgprint(
+                _("Quyidagi hujjatlar bekor qilinmadi — ularni qo'lda ko'rib chiqing:")
+                + "<br><br>" + "<br>".join(qolgan),
+                title=_("Bekor qilinmagan hujjatlar"),
+                indicator="orange",
             )
 
     def mark_completed(self):

@@ -45,10 +45,14 @@ fixtures = [
 
 permission_query_conditions = {
 	"Trip Master": "akfa_accounting.akfa_accounting.doctype.trip_master.trip_master.get_permission_query_conditions",
+	"Vortex Zayavka": "akfa_accounting.vortex_narx.zayavka_query",
+	"Vortex Jonatuv": "akfa_accounting.vortex_narx.jonatuv_query",
 }
 
 has_permission = {
 	"Trip Master": "akfa_accounting.akfa_accounting.doctype.trip_master.trip_master.has_permission",
+	"Vortex Zayavka": "akfa_accounting.vortex_narx.zayavka_permission",
+	"Vortex Jonatuv": "akfa_accounting.vortex_narx.jonatuv_permission",
 }
 
 doc_events = {

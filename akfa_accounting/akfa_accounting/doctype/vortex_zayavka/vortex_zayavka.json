@@ -1,0 +1,252 @@
+{
+ "actions": [],
+ "autoname": "naming_series:",
+ "creation": "2026-09-13 12:00:00",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "posting_date",
+  "company",
+  "column_break_1",
+  "holat",
+  "zakaz_turi",
+  "mijoz_section",
+  "customer",
+  "customer_name",
+  "obyekt",
+  "column_break_2",
+  "customer_phone",
+  "tovarlar_section",
+  "tovarlar",
+  "jami_section",
+  "jami_olcham",
+  "vortex_jami",
+  "izoh_section",
+  "izoh",
+  "tizim_section",
+  "currency",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Seriya",
+   "options": "VZ-.YYYY.-",
+   "default": "VZ-.YYYY.-",
+   "reqd": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "posting_date",
+   "fieldtype": "Date",
+   "label": "Sana",
+   "default": "Today",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Kompaniya",
+   "options": "Company",
+   "default": "Vortex",
+   "reqd": 1,
+   "read_only": 0
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "holat",
+   "fieldtype": "Select",
+   "label": "Holat",
+   "options": "Yangi\nQabul qilindi\nQisman jo'natildi\nCompleted\nBekor",
+   "default": "Yangi",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "zakaz_turi",
+   "fieldtype": "Select",
+   "label": "Тип заказа",
+   "options": "\nБелый\nЧёрный",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "mijoz_section",
+   "fieldtype": "Section Break",
+   "label": "Mijoz"
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Mijoz",
+   "options": "Customer",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "label": "Mijoz nomi",
+   "fetch_from": "customer.customer_name",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "obyekt",
+   "fieldtype": "Link",
+   "label": "Obyekt",
+   "options": "Customer Site",
+   "description": "Mijozning qaysi obyektiga"
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "customer_phone",
+   "fieldtype": "Data",
+   "label": "Telefon",
+   "fetch_from": "customer.mobile_no",
+   "fetch_if_empty": 1,
+   "options": "Phone"
+  },
+  {
+   "fieldname": "tovarlar_section",
+   "fieldtype": "Section Break",
+   "label": "Tovarlar"
+  },
+  {
+   "fieldname": "tovarlar",
+   "fieldtype": "Table",
+   "label": "Tovarlar",
+   "options": "Vortex Zayavka Tovar",
+   "reqd": 1
+  },
+  {
+   "fieldname": "jami_section",
+   "fieldtype": "Section Break",
+   "label": "Jami"
+  },
+  {
+   "fieldname": "jami_olcham",
+   "fieldtype": "Small Text",
+   "label": "Jami miqdor",
+   "read_only": 1,
+   "in_list_view": 1,
+   "description": "O'lchov birligi bo'yicha jami"
+  },
+  {
+   "fieldname": "vortex_jami",
+   "fieldtype": "Currency",
+   "label": "Jami summa",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "izoh_section",
+   "fieldtype": "Section Break",
+   "label": "Izoh",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "izoh",
+   "fieldtype": "Small Text",
+   "label": "Izoh"
+  },
+  {
+   "fieldname": "tizim_section",
+   "fieldtype": "Section Break",
+   "label": "Tizim",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Valyuta",
+   "options": "Currency",
+   "default": "UZS",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "options": "Vortex Zayavka",
+   "read_only": 1,
+   "no_copy": 1,
+   "print_hide": 1
+  }
+ ],
+ "is_submittable": 1,
+ "links": [
+  {
+   "link_doctype": "Vortex Jonatuv",
+   "link_fieldname": "zayavka"
+  }
+ ],
+ "modified": "2026-09-13 16:00:00",
+ "modified_by": "Administrator",
+ "module": "Akfa Accounting",
+ "name": "Vortex Zayavka",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  },
+  {
+   "role": "Vortex Ofis",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  },
+  {
+   "role": "Vortex Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "print": 1,
+   "report": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "customer_name",
+ "track_changes": 1
+}

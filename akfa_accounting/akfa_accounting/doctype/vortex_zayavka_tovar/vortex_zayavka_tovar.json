@@ -1,0 +1,21 @@
+{
+ "actions": [], "creation": "2026-09-13 12:00:00", "doctype": "DocType", "editable_grid": 1, "engine": "InnoDB",
+ "field_order": ["item","item_name","uom","qty","conversion_factor","stock_qty","vortex_narx","vortex_summa","column_break_1","jonatilgan","qolgan","currency"],
+ "fields": [
+  {"fieldname":"item","fieldtype":"Link","label":"Tovar","options":"Item","reqd":1,"in_list_view":1,"columns":3},
+  {"fieldname":"item_name","fieldtype":"Data","label":"Nomi","fetch_from":"item.item_name","read_only":1},
+  {"fieldname":"uom","fieldtype":"Link","label":"O'lchov","options":"UOM","reqd":1,"in_list_view":1,"columns":1},
+  {"fieldname":"qty","fieldtype":"Float","label":"Miqdor","reqd":1,"in_list_view":1,"columns":1,"precision":"3"},
+  {"fieldname":"conversion_factor","fieldtype":"Float","label":"Konversiya","hidden":1,"read_only":1,"precision":"6"},
+  {"fieldname":"stock_qty","fieldtype":"Float","label":"Asosiy miqdor","hidden":1,"read_only":1,"precision":"3"},
+  {"fieldname":"vortex_narx","fieldtype":"Currency","label":"Sotuv narxi","options":"currency","in_list_view":1,"columns":2,"description":"Mijozga sotish narxi — zayavka beruvchi yozadi"},
+  {"fieldname":"vortex_summa","fieldtype":"Currency","label":"Summa","options":"currency","read_only":1,"in_list_view":1,"columns":2},
+  {"fieldname":"column_break_1","fieldtype":"Column Break"},
+  {"fieldname":"jonatilgan","fieldtype":"Float","label":"Jo'natilgan","read_only":1,"in_list_view":1,"columns":1,"no_copy":1,"precision":"3","description":"Asosiy o'lchovda"},
+  {"fieldname":"qolgan","fieldtype":"Float","label":"Qolgan","read_only":1,"no_copy":1,"precision":"3","description":"Asosiy o'lchovda"},
+  {"fieldname":"currency","fieldtype":"Link","label":"Valyuta","options":"Currency","hidden":1,"read_only":1,"print_hide":1}
+ ],
+ "istable": 1, "links": [], "modified": "2026-09-13 20:00:00", "modified_by": "Administrator",
+ "module": "Akfa Accounting", "name": "Vortex Zayavka Tovar", "owner": "Administrator", "permissions": [],
+ "sort_field": "modified", "sort_order": "DESC", "states": []
+}

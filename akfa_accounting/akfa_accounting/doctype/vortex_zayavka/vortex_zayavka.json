@@ -218,30 +218,6 @@
    "print": 1,
    "report": 1,
    "share": 1
-  },
-  {
-   "role": "Vortex Ofis",
-   "read": 1,
-   "write": 1,
-   "create": 1,
-   "delete": 1,
-   "submit": 1,
-   "cancel": 1,
-   "amend": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "report": 1,
-   "share": 1
-  },
-  {
-   "role": "Vortex Manager",
-   "read": 1,
-   "write": 1,
-   "create": 1,
-   "delete": 1,
-   "print": 1,
-   "report": 1
   }
  ],
  "sort_field": "modified",

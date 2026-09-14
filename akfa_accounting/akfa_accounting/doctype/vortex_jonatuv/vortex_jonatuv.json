@@ -289,7 +289,7 @@
    "options": "Cost Center",
    "read_only": 1,
    "permlevel": 1,
-   "description": "Postavchikdan avtomatik \u2014 PI va SI shu markazga yoziladi"
+   "description": "Postavchikdan avtomatik — PI va SI shu markazga yoziladi"
   },
   {
    "fieldname": "currency",
@@ -339,33 +339,6 @@
    "permlevel": 1,
    "read": 1,
    "write": 1
-  },
-  {
-   "role": "Vortex Ofis",
-   "read": 1,
-   "write": 1,
-   "create": 1,
-   "delete": 1,
-   "submit": 1,
-   "cancel": 1,
-   "amend": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "report": 1,
-   "share": 1
-  },
-  {
-   "role": "Vortex Ofis",
-   "permlevel": 1,
-   "read": 1,
-   "write": 1
-  },
-  {
-   "role": "Vortex Manager",
-   "read": 1,
-   "print": 1,
-   "report": 1
   }
  ],
  "sort_field": "modified",

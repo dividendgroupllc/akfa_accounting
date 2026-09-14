@@ -17,12 +17,19 @@ from akfa_accounting.vortex_setup import (  # noqa: F401  (re-export: doctype'la
 	ZAVOD_PRICE_LIST, VORTEX_PRICE_LIST,
 )
 
-OFIS_ROLLARI = ("Vortex Ofis", "System Manager", "Administrator")
+OFIS_DOCTYPE = "Vortex Jonatuv"   # ofis huquqi shu doctype'ning permlevel-1 o'qishidan aniqlanadi
 
 
 def ofis_huquqi(user=None):
+	"""«Ofis» = Vortex Jonatuv da permlevel 1 (zavod narxi, cost center) ni o'qiy oladigan user.
+
+	Rol nomi kodda yo'q: rollar va huquqlar Role Permission Manager'da beriladi.
+	Permlevel-1 o'qish kimda bo'lsa -- hamma zayavkani ko'radi, zavod narxini oladi,
+	«Qabul qildim» ni bosa oladi. Qolganlar faqat o'zi yaratgan hujjatlarni ko'radi."""
 	user = user or frappe.session.user
-	return user == "Administrator" or bool(set(frappe.get_roles(user)) & set(OFIS_ROLLARI))
+	if user == "Administrator":
+		return True
+	return 1 in frappe.get_meta(OFIS_DOCTYPE).get_permlevel_access("read", user=user)
 
 
 def session_employee(user=None):

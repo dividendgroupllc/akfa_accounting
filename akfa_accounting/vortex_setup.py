@@ -38,8 +38,6 @@ PODDON_UOM = "Dona"
 PODDON_GROUP = "Tara"
 PODDON_NARX = {"zavod": 0, "vortex": 0}   # boshlang'ich — OFIS to'ldirishi shart
 
-ROLES = ["Vortex Manager", "Vortex Ofis"]
-
 # Qaysi zavoddan (postavchik) olingan bo'lsa, PI/SI shu cost center'ga yoziladi.
 # Ro'yxatda yo'q postavchik uchun kompaniyaning default markazi ishlatiladi.
 # Yangi zavod qo'shilganda shu yerga bitta qator qo'shiladi -- boshqa hech nima.
@@ -63,7 +61,6 @@ def setup_vortex():
 	create_items()
 	create_poddon_item()
 	create_price_lists()
-	create_roles()
 	teardown_v1()
 	frappe.db.commit()
 	print("Vortex sozlandi.")
@@ -218,31 +215,6 @@ def create_price_lists():
 			                "uom": PODDON_UOM, "currency": CURRENCY, "price_list_rate": PODDON_NARX[key]}).insert()
 			n += 1
 	print(f"  Item Price: {n} ta yangi")
-
-
-# Vortex rollari ishlashi uchun zarur ma'lumotnomalarga o'qish huquqi. Bularsiz
-# formadagi Link maydonlar (Mijoz, Tovar, UOM...) validate_link da rad etiladi,
-# ofis esa PI/SI yaratayotganda Account o'qiy olmaydi (ERPNext get_party_account
-# buni ignore_permissions bilan ham chetlab o'tmaydi).
-ROLE_READ = {
-	"Vortex Manager": ["Customer", "Item", "UOM", "Company"],
-	"Vortex Ofis": ["Customer", "Item", "UOM", "Company", "Supplier", "Account", "Cost Center"],
-}
-
-
-def create_roles():
-	from frappe.permissions import add_permission
-
-	for role in ROLES:
-		if not frappe.db.exists("Role", role):
-			frappe.get_doc({"doctype": "Role", "role_name": role, "desk_access": 1}).insert()
-			print(f"  Role: {role}")
-	for role, doctypes in ROLE_READ.items():
-		for doctype in doctypes:
-			if frappe.db.exists("Custom DocPerm", {"parent": doctype, "role": role, "permlevel": 0}):
-				continue
-			add_permission(doctype, role, 0)
-			print(f"  {role} -> {doctype}: read")
 
 
 # --------------------------------------------------------- 1-versiya izlari
